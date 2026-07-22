@@ -1,0 +1,7 @@
+.next
+.agents
+coverage
+node_modules
+package-lock.json
+skills-lock.json
+SURFCE_CODEX_SPEC.md
