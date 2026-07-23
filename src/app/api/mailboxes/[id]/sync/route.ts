@@ -4,6 +4,7 @@ import { requireAppAuthContext } from "@/features/auth/server/auth-context";
 import { mailboxIdSchema } from "@/features/mailboxes/schemas";
 import { syncMailbox } from "@/features/mailboxes/server/service";
 import { assertOrganizationPermission } from "@/features/organizations/server/authorization";
+import { apiErrorResponse } from "@/lib/http/api-errors";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 interface MailboxRouteProps {
@@ -25,9 +26,10 @@ export async function POST(_request: Request, { params }: MailboxRouteProps) {
     if (!data) return NextResponse.json({ error: "Boîte introuvable." }, { status: 404 });
     return NextResponse.json(await syncMailbox(mailboxId));
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Synchronisation impossible." },
-      { status: 400 },
-    );
+    return apiErrorResponse(error, {
+      invalidMessage: "La boîte demandée est invalide.",
+      failureMessage:
+        "La synchronisation n’a pas été confirmée. Aucun message ne doit être considéré importé.",
+    });
   }
 }

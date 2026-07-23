@@ -169,8 +169,38 @@ export interface ProviderJobRow extends Record<string, unknown> {
   scheduled_at: string;
   started_at: string | null;
   completed_at: string | null;
+  quota_event_id: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface ProviderQuotaRow extends Record<string, unknown> {
+  id: string;
+  organization_id: string;
+  provider: string;
+  operation: string;
+  window_seconds: number;
+  max_requests: number;
+  enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProviderUsageEventRow extends Record<string, unknown> {
+  id: string;
+  organization_id: string;
+  actor_id: string | null;
+  provider: string;
+  operation: string;
+  request_id: string;
+  source_type: "direct" | "provider_job";
+  source_id: string | null;
+  allowed: boolean;
+  status: "processing" | "succeeded" | "failed" | "blocked";
+  duration_ms: number | null;
+  error_code: string | null;
+  created_at: string;
+  completed_at: string | null;
 }
 
 export interface AiRunRow extends Record<string, unknown> {
@@ -983,6 +1013,23 @@ export interface Database {
         Update: Partial<ProviderJobRow>;
         Relationships: [];
       };
+      provider_quotas: {
+        Row: ProviderQuotaRow;
+        Insert: Partial<ProviderQuotaRow> &
+          Pick<ProviderQuotaRow, "organization_id" | "provider" | "operation" | "max_requests">;
+        Update: Partial<ProviderQuotaRow>;
+        Relationships: [];
+      };
+      provider_usage_events: {
+        Row: ProviderUsageEventRow;
+        Insert: Partial<ProviderUsageEventRow> &
+          Pick<
+            ProviderUsageEventRow,
+            "organization_id" | "provider" | "operation" | "request_id" | "allowed" | "status"
+          >;
+        Update: Partial<ProviderUsageEventRow>;
+        Relationships: [];
+      };
       proposals: {
         Row: ProposalRow;
         Insert: Partial<ProposalRow> &
@@ -1359,6 +1406,32 @@ export interface Database {
           p_mock?: boolean;
         };
         Returns: Json;
+      };
+      consume_provider_quota: {
+        Args: {
+          p_organization_id: string;
+          p_provider: string;
+          p_operation: string;
+          p_request_id: string;
+          p_source_type?: "direct" | "provider_job";
+          p_source_id?: string | null;
+        };
+        Returns: {
+          event_id: string;
+          allowed: boolean;
+          limit_value: number;
+          remaining: number;
+          retry_after_seconds: number;
+        }[];
+      };
+      finalize_provider_operation: {
+        Args: {
+          p_event_id: string;
+          p_status: "succeeded" | "failed";
+          p_duration_ms: number;
+          p_error_code?: string | null;
+        };
+        Returns: undefined;
       };
       ingest_provider_message: {
         Args: {

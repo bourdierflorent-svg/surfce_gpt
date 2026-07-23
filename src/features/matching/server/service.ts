@@ -10,6 +10,7 @@ import {
   VENUE_MATCH_PROMPT_VERSION,
   VENUE_MATCH_SYSTEM_PROMPT,
 } from "@/lib/ai/prompts/venue-match-rationale.v1";
+import { runProviderOperation } from "@/lib/providers/quota";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getAiProvider } from "@/providers/ai";
 import type { AppAuthContext } from "@/types/auth";
@@ -132,13 +133,21 @@ export async function generateVenueMatches(
     const enriched = await Promise.all(
       candidates.map(async (candidate) => ({
         candidate,
-        rationale: await ai.generateVenueRationale({
-          companyName: company.trade_name ?? company.legal_name,
-          venueName: candidate.venue.name,
-          offerName: candidate.offer.name,
-          score: candidate.score,
-          reasons: candidate.reasons,
-          risks: candidate.risks,
+        rationale: await runProviderOperation({
+          client: supabase,
+          organizationId: context.organization.id,
+          provider: ai.name,
+          operation: "venue_match_rationale",
+          sourceId: companyId,
+          task: () =>
+            ai.generateVenueRationale({
+              companyName: company.trade_name ?? company.legal_name,
+              venueName: candidate.venue.name,
+              offerName: candidate.offer.name,
+              score: candidate.score,
+              reasons: candidate.reasons,
+              risks: candidate.risks,
+            }),
         }),
       })),
     );

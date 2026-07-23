@@ -70,6 +70,7 @@ export interface PlaceSearchResult {
 }
 
 export interface PlaceSearchProvider {
+  readonly name: string;
   search(input: PlaceSearchInput): Promise<PlaceSearchResult>;
   getDetails(externalId: string): Promise<PlaceCandidate | null>;
 }

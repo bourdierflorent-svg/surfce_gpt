@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { paginateItems, paginationResult, type PaginatedResult } from "@/lib/pagination";
 import type { AppAuthContext } from "@/types/auth";
 import type { ContactRow } from "@/types/database";
 
@@ -63,11 +64,13 @@ const previewContacts: ContactRow[] = [
 
 export async function listContacts(
   context: AppAuthContext,
-  options: { query?: string; status?: string } = {},
-): Promise<ContactListItem[]> {
+  options: { query?: string; status?: string; page?: number; pageSize?: number } = {},
+): Promise<PaginatedResult<ContactListItem>> {
+  const page = options.page ?? 1;
+  const pageSize = Math.min(Math.max(options.pageSize ?? 50, 10), 100);
   if (context.isPreview) {
     const value = options.query?.trim().toLocaleLowerCase("fr") ?? "";
-    return previewContacts
+    const filtered = previewContacts
       .filter(
         (contact) =>
           (!value ||
@@ -84,21 +87,23 @@ export async function listContacts(
           ? "Studio Huit Communication"
           : "Cabinet Rive Conseil",
       }));
+    return paginateItems(filtered, page, pageSize);
   }
 
   const supabase = await createSupabaseServerClient();
   let query = supabase
     .from("contacts")
-    .select("*")
+    .select("*", { count: "exact" })
     .eq("organization_id", context.organization.id)
     .is("deleted_at", null)
     .order("do_not_contact")
-    .order("full_name");
+    .order("full_name")
+    .range((page - 1) * pageSize, page * pageSize - 1);
   if (options.query?.trim()) query = query.ilike("full_name", `%${options.query.trim()}%`);
   if (options.status && options.status !== "all") {
     query = query.eq("contact_status", options.status as ContactRow["contact_status"]);
   }
-  const { data, error } = await query;
+  const { data, error, count } = await query;
   if (error) throw new Error("Impossible de charger les contacts.");
 
   const companyIds = Array.from(new Set((data ?? []).map((contact) => contact.company_id)));
@@ -113,10 +118,15 @@ export async function listContacts(
   const names = new Map(
     (companies.data ?? []).map((company) => [company.id, company.trade_name ?? company.legal_name]),
   );
-  return (data ?? []).map((contact) => ({
-    ...contact,
-    companyName: names.get(contact.company_id) ?? "Entreprise indisponible",
-  }));
+  return paginationResult(
+    (data ?? []).map((contact) => ({
+      ...contact,
+      companyName: names.get(contact.company_id) ?? "Entreprise indisponible",
+    })),
+    count ?? 0,
+    page,
+    pageSize,
+  );
 }
 
 export async function getContactDetail(

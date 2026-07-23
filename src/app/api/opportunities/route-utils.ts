@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { ZodError } from "zod";
 
-import { AuthorizationError } from "@/lib/errors/authorization-error";
+import { apiErrorResponse } from "@/lib/http/api-errors";
 
 export function invalidOpportunityAction(error: ZodError) {
   return NextResponse.json(
@@ -11,11 +11,8 @@ export function invalidOpportunityAction(error: ZodError) {
 }
 
 export function opportunityActionError(error: unknown) {
-  if (error instanceof AuthorizationError) {
-    return NextResponse.json({ error: error.message }, { status: 403 });
-  }
-  return NextResponse.json(
-    { error: error instanceof Error ? error.message : "L’action n’a pas abouti." },
-    { status: 500 },
-  );
+  return apiErrorResponse(error, {
+    failureMessage:
+      "L’action commerciale n’a pas été confirmée. Vérifiez le dossier avant de réessayer.",
+  });
 }

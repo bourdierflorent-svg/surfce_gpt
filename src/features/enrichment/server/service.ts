@@ -2,6 +2,7 @@ import { hashJson } from "@/lib/ai/hash";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getWebsiteEnrichmentProvider } from "@/providers/enrichment";
 import { getCompanyRegistryProvider } from "@/providers/registries";
+import { runProviderOperation } from "@/lib/providers/quota";
 import type { AppAuthContext } from "@/types/auth";
 import type { DataSourceRow, Json } from "@/types/database";
 
@@ -108,14 +109,22 @@ export async function enrichCompanyWebsite(
   }
 
   try {
-    const result = await provider.analyze({
-      companyId,
-      legalName: company.legal_name,
-      tradeName: company.trade_name,
-      websiteUrl: company.website_url,
-      domain: company.domain,
-      sector: company.sector,
-      description: company.description,
+    const result = await runProviderOperation({
+      client: supabase,
+      organizationId: context.organization.id,
+      provider: provider.name,
+      operation: "website_analysis",
+      sourceId: companyId,
+      task: () =>
+        provider.analyze({
+          companyId,
+          legalName: company.legal_name,
+          tradeName: company.trade_name,
+          websiteUrl: company.website_url,
+          domain: company.domain,
+          sector: company.sector,
+          description: company.description,
+        }),
     });
     const source = await writeSource(supabase, {
       organizationId: context.organization.id,
@@ -194,13 +203,21 @@ export async function verifyCompanyRegistry(
   }
 
   try {
-    const result = await provider.verify({
-      companyId,
-      legalName: company.legal_name,
-      siren: company.siren,
-      primarySiret: company.primary_siret,
-      sector: company.sector,
-      city: company.city,
+    const result = await runProviderOperation({
+      client: supabase,
+      organizationId: context.organization.id,
+      provider: provider.name,
+      operation: "registry_verification",
+      sourceId: companyId,
+      task: () =>
+        provider.verify({
+          companyId,
+          legalName: company.legal_name,
+          siren: company.siren,
+          primarySiret: company.primary_siret,
+          sector: company.sector,
+          city: company.city,
+        }),
     });
     const source = await writeSource(supabase, {
       organizationId: context.organization.id,

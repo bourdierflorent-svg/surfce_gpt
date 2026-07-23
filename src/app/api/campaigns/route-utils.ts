@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { ZodError } from "zod";
 
-import { AuthorizationError } from "@/lib/errors/authorization-error";
+import { apiErrorResponse } from "@/lib/http/api-errors";
 
 export function invalidCampaignAction(error: ZodError) {
   return NextResponse.json(
@@ -11,14 +11,8 @@ export function invalidCampaignAction(error: ZodError) {
 }
 
 export function campaignActionError(error: unknown) {
-  if (error instanceof AuthorizationError) {
-    return NextResponse.json({ error: "Votre rôle ne permet pas cette action." }, { status: 403 });
-  }
-  return NextResponse.json(
-    {
-      error: error instanceof Error ? error.message : "Le traitement n’a pas abouti.",
-      safeToRetry: true,
-    },
-    { status: 500 },
-  );
+  return apiErrorResponse(error, {
+    failureMessage:
+      "L’action de campagne n’a pas été confirmée. Vérifiez son état avant de réessayer.",
+  });
 }

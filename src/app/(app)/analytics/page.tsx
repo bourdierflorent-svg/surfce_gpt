@@ -110,12 +110,44 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
     ["avg_response_delay", "avg_cycle_duration"].includes(item.key),
   );
   const monitoring = [
-    ["Rebonds", report.monitoring.bounced],
-    ["Échecs d’envoi", report.monitoring.failed],
-    ["Providers en échec", report.monitoring.providerFailures],
-    ["Boîtes en erreur", report.monitoring.mailboxErrors],
-    ["Tâches en retard", report.monitoring.overdueTasks],
+    { label: "Rebonds", value: report.monitoring.bounced, display: report.monitoring.bounced },
+    {
+      label: "Échecs d’envoi",
+      value: report.monitoring.failed,
+      display: report.monitoring.failed,
+    },
+    {
+      label: "Providers en échec",
+      value: report.monitoring.providerFailures,
+      display: report.monitoring.providerFailures,
+    },
+    {
+      label: "Boîtes en erreur",
+      value: report.monitoring.mailboxErrors,
+      display: report.monitoring.mailboxErrors,
+    },
+    {
+      label: "Tâches en retard",
+      value: report.monitoring.overdueTasks,
+      display: report.monitoring.overdueTasks,
+    },
+    {
+      label: "Quotas bloqués",
+      value: report.monitoring.quotaBlocks,
+      display: report.monitoring.quotaBlocks,
+    },
+    {
+      label: "Taux d’erreur providers",
+      value: report.monitoring.providerErrorRate,
+      display: `${report.monitoring.providerErrorRate.toFixed(1)} %`,
+    },
+    {
+      label: "Durée moyenne providers",
+      value: 0,
+      display: `${Math.round(report.monitoring.providerAverageDurationMs)} ms`,
+    },
   ];
+  const hasMonitoringAlert = monitoring.some((item) => item.value > 0);
 
   return (
     <div className="mx-auto max-w-[1480px] space-y-7">
@@ -324,9 +356,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
           </CardContent>
         </Card>
 
-        <Card
-          className={monitoring.some(([, value]) => Number(value) > 0) ? "border-warning/45" : ""}
-        >
+        <Card className={hasMonitoringAlert ? "border-warning/45" : ""}>
           <CardHeader>
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -335,7 +365,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
                   Signaux à traiter, jamais noyés dans la conversion.
                 </CardDescription>
               </div>
-              {monitoring.some(([, value]) => Number(value) > 0) ? (
+              {hasMonitoringAlert ? (
                 <CircleAlert className="size-5 text-warning" aria-hidden="true" />
               ) : (
                 <Gauge className="size-5 text-success" aria-hidden="true" />
@@ -344,13 +374,13 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
           </CardHeader>
           <CardContent>
             <dl className="divide-y divide-border">
-              {monitoring.map(([label, value]) => (
+              {monitoring.map((item) => (
                 <div
-                  key={String(label)}
+                  key={item.label}
                   className="flex items-center justify-between gap-4 py-3 text-sm"
                 >
-                  <dt className="text-muted-foreground">{label}</dt>
-                  <dd className="font-data font-semibold">{value}</dd>
+                  <dt className="text-muted-foreground">{item.label}</dt>
+                  <dd className="font-data font-semibold">{item.display}</dd>
                 </div>
               ))}
             </dl>

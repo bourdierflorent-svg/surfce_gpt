@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { requireAppAuthContext } from "@/features/auth/server/auth-context";
 import { threadIdSchema } from "@/features/inbox/schemas";
 import { markThreadRead } from "@/features/inbox/server/service";
+import { apiErrorResponse } from "@/lib/http/api-errors";
 
 interface ThreadRouteProps {
   params: Promise<{ id: string }>;
@@ -15,9 +16,9 @@ export async function POST(_request: Request, { params }: ThreadRouteProps) {
       await markThreadRead(context, threadIdSchema.parse((await params).id)),
     );
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Mise à jour impossible." },
-      { status: 400 },
-    );
+    return apiErrorResponse(error, {
+      invalidMessage: "La conversation demandée est invalide.",
+      failureMessage: "L’état de lecture n’a pas été modifié. Rechargez la conversation.",
+    });
   }
 }

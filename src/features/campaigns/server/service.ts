@@ -10,6 +10,7 @@ import {
 import { assertOrganizationPermission } from "@/features/organizations/server/authorization";
 import { hashJson } from "@/lib/ai/hash";
 import { CAMPAIGN_EMAIL_PROMPT_VERSION } from "@/lib/ai/prompts/campaign-email.v1";
+import { runProviderOperation } from "@/lib/providers/quota";
 import { AuthorizationError } from "@/lib/errors/authorization-error";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getAiProvider } from "@/providers/ai";
@@ -336,7 +337,14 @@ export async function generateCampaignMessages(
           verifiedFacts: facts,
         };
         const output = emailGenerationOutputSchema.parse(
-          await provider.generateEmailVariants(input),
+          await runProviderOperation({
+            client: supabase,
+            organizationId: context.organization.id,
+            provider: provider.name,
+            operation: "campaign_email_variants",
+            sourceId: campaign.id,
+            task: () => provider.generateEmailVariants(input),
+          }),
         );
         firstOutput ??= output;
         const recommended = output.variants[output.recommended_variant]!;

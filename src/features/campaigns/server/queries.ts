@@ -116,7 +116,8 @@ export async function listCampaigns(context: AppAuthContext): Promise<CampaignLi
     .from("campaigns")
     .select("*")
     .eq("organization_id", context.organization.id)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(100);
   if (error) throw new Error("Impossible de charger les campagnes.");
 
   const ids = (campaigns ?? []).map((campaign) => campaign.id);

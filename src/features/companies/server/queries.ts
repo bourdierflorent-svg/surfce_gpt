@@ -1,5 +1,6 @@
 import { MOCK_PLACES } from "@/providers/places/mock";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { paginateItems, paginationResult, type PaginatedResult } from "@/lib/pagination";
 import type { AppAuthContext } from "@/types/auth";
 import type { CompanyRow } from "@/types/database";
 
@@ -51,15 +52,19 @@ const previewCompanies: CompanyRow[] = MOCK_PLACES.slice(0, 2).map((place, index
 interface ListCompaniesOptions {
   query?: string;
   status?: string;
+  page?: number;
+  pageSize?: number;
 }
 
 export async function listCompanies(
   context: AppAuthContext,
   options: ListCompaniesOptions = {},
-): Promise<CompanyListItem[]> {
+): Promise<PaginatedResult<CompanyListItem>> {
+  const page = options.page ?? 1;
+  const pageSize = Math.min(Math.max(options.pageSize ?? 50, 10), 100);
   if (context.isPreview) {
     const query = options.query?.trim().toLocaleLowerCase("fr") ?? "";
-    return previewCompanies
+    const filtered = previewCompanies
       .filter(
         (company) =>
           (!query ||
@@ -69,22 +74,24 @@ export async function listCompanies(
           (!options.status || options.status === "all" || company.status === options.status),
       )
       .map((company) => ({ ...company, sourceProvider: "mock_places" }));
+    return paginateItems(filtered, page, pageSize);
   }
 
   const supabase = await createSupabaseServerClient();
   let query = supabase
     .from("companies")
-    .select("*")
+    .select("*", { count: "exact" })
     .eq("organization_id", context.organization.id)
     .is("deleted_at", null)
     .order("qualification_score", { ascending: false, nullsFirst: false })
-    .order("trade_name");
+    .order("trade_name")
+    .range((page - 1) * pageSize, page * pageSize - 1);
 
   if (options.query?.trim()) query = query.ilike("normalized_name", `%${options.query.trim()}%`);
   if (options.status && options.status !== "all")
     query = query.eq("status", options.status as CompanyRow["status"]);
 
-  const { data: companies, error } = await query;
+  const { data: companies, error, count } = await query;
   if (error) throw new Error("Impossible de charger les entreprises.");
 
   const ids = (companies ?? []).map((company) => company.id);
@@ -103,10 +110,15 @@ export async function listCompanies(
     (sources.data ?? []).map((source) => [source.entity_id, source.provider]),
   );
 
-  return (companies ?? []).map((company) => ({
-    ...company,
-    sourceProvider: providerByCompany.get(company.id) ?? null,
-  }));
+  return paginationResult(
+    (companies ?? []).map((company) => ({
+      ...company,
+      sourceProvider: providerByCompany.get(company.id) ?? null,
+    })),
+    count ?? 0,
+    page,
+    pageSize,
+  );
 }
 
 export async function getCompanyDetail(

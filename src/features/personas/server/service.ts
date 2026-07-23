@@ -6,6 +6,7 @@ import {
 } from "@/features/enrichment/server/jobs";
 import { hashJson } from "@/lib/ai/hash";
 import { PERSONA_PROMPT_VERSION, PERSONA_SYSTEM_PROMPT } from "@/lib/ai/prompts/persona.v1";
+import { runProviderOperation } from "@/lib/providers/quota";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getAiProvider } from "@/providers/ai";
 import type { AppAuthContext } from "@/types/auth";
@@ -122,7 +123,14 @@ export async function generateCompanyPersona(
     aiRunId = aiRun.id;
 
     const output = personaOutputSchema.parse(
-      await ai.generatePersona({ company, sources: sources ?? [] }),
+      await runProviderOperation({
+        client: supabase,
+        organizationId: context.organization.id,
+        provider: ai.name,
+        operation: "persona_generation",
+        sourceId: companyId,
+        task: () => ai.generatePersona({ company, sources: sources ?? [] }),
+      }),
     );
     const { data: latest } = await supabase
       .from("personas")

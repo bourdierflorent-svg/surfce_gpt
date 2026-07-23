@@ -4,6 +4,7 @@ import { z } from "zod";
 import { classifyInboundText } from "@/features/inbox/classification";
 import { assertOrganizationPermission } from "@/features/organizations/server/authorization";
 import { decryptSecret, encryptSecret, hasEncryptionKey } from "@/lib/crypto/oauth-tokens";
+import { runProviderOperation } from "@/lib/providers/quota";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getMailProvider } from "@/providers/mail";
@@ -55,9 +56,18 @@ async function refreshIfNeeded(
   if (!mailbox.encrypted_refresh_token) {
     throw new Error("Le token de renouvellement est absent. Reconnectez la boîte.");
   }
-  const tokenSet = await refreshOAuthToken({
-    config: readOAuthProviderConfig(mailbox.provider),
-    refreshToken: decryptSecret(mailbox.encrypted_refresh_token),
+  const providerName = mailbox.provider;
+  const tokenSet = await runProviderOperation({
+    client,
+    organizationId: mailbox.organization_id,
+    provider: providerName,
+    operation: "oauth_token_refresh",
+    sourceId: mailbox.id,
+    task: () =>
+      refreshOAuthToken({
+        config: readOAuthProviderConfig(providerName),
+        refreshToken: decryptSecret(mailbox.encrypted_refresh_token!),
+      }),
   });
   accessToken = tokenSet.accessToken;
   const update = {
@@ -102,10 +112,17 @@ export async function saveOAuthMailbox(
   if (context.isPreview) throw new Error("OAuth est désactivé en mode aperçu.");
   const supabase = await createSupabaseServerClient();
   const provider = getMailProvider(providerName, tokenSet.accessToken);
-  const connection = await provider.connect({
-    userId: context.user.id,
-    emailAddress: context.user.email,
-    displayName: context.user.fullName ?? context.user.email,
+  const connection = await runProviderOperation({
+    client: supabase,
+    organizationId: context.organization.id,
+    provider: provider.name,
+    operation: "connect",
+    task: () =>
+      provider.connect({
+        userId: context.user.id,
+        emailAddress: context.user.email,
+        displayName: context.user.fullName ?? context.user.email,
+      }),
   });
   const { data: existing } = await supabase
     .from("mailboxes")
@@ -144,7 +161,14 @@ export async function saveOAuthMailbox(
   const { data: mailbox, error } = await operation.select("*").single();
   if (error) throw new Error("La boîte OAuth n’a pas pu être enregistrée.");
 
-  const watch = await provider.watch({ connectionId: mailbox.id }).catch(() => ({
+  const watch = await runProviderOperation({
+    client: supabase,
+    organizationId: context.organization.id,
+    provider: provider.name,
+    operation: "watch",
+    sourceId: mailbox.id,
+    task: () => provider.watch({ connectionId: mailbox.id }),
+  }).catch(() => ({
     active: false,
     expiresAt: null,
     resourceId: null,
@@ -224,7 +248,14 @@ export async function syncMailbox(mailboxId: string) {
 
   try {
     const { mailbox, provider } = await providerForMailbox(admin, original);
-    const changes = await provider.listChanges(mailbox.sync_cursor ?? undefined);
+    const changes = await runProviderOperation({
+      client: admin,
+      organizationId: mailbox.organization_id,
+      provider: provider.name,
+      operation: "list_changes",
+      sourceId: mailbox.id,
+      task: () => provider.listChanges(mailbox.sync_cursor ?? undefined),
+    });
     let ingested = 0;
     let duplicates = 0;
     let inbound = 0;
@@ -304,7 +335,14 @@ export async function refreshMailboxWatch(mailboxId: string) {
   const { data, error } = await admin.from("mailboxes").select("*").eq("id", mailboxId).single();
   if (error || data.provider === "mock") return { active: false, mailboxId };
   const { mailbox, provider } = await providerForMailbox(admin, data);
-  const watch = await provider.watch({ connectionId: mailbox.watch_resource_id ?? mailbox.id });
+  const watch = await runProviderOperation({
+    client: admin,
+    organizationId: mailbox.organization_id,
+    provider: provider.name,
+    operation: "watch_refresh",
+    sourceId: mailbox.id,
+    task: () => provider.watch({ connectionId: mailbox.watch_resource_id ?? mailbox.id }),
+  });
   await admin
     .from("mailboxes")
     .update({
@@ -358,7 +396,14 @@ export async function disconnectMailbox(context: AppAuthContext, mailboxId: stri
   }
   if (data.provider !== "mock" && data.encrypted_access_token) {
     const { provider } = await providerForMailbox(supabase, data);
-    await provider.stopWatch(data.watch_resource_id ?? "").catch(() => undefined);
+    await runProviderOperation({
+      client: supabase,
+      organizationId: context.organization.id,
+      provider: provider.name,
+      operation: "disconnect",
+      sourceId: data.id,
+      task: () => provider.stopWatch(data.watch_resource_id ?? ""),
+    }).catch(() => undefined);
   }
   const { error: updateError } = await supabase
     .from("mailboxes")

@@ -4,11 +4,11 @@ SURFCE est un outil indépendant de prospection B2B et de CRM événementiel, co
 son propriétaire. Stargazing constitue son premier cas d’usage métier, sans définir la marque ni
 la direction artistique de SURFCE.
 
-Le dépôt couvre actuellement les **Phases 0 à 8** du cahier des charges : socle Next.js,
+Le dépôt couvre les **Phases 0 à 9** du cahier des charges : socle Next.js,
 authentification Supabase SSR, organisations et rôles, registre des établissements, Explorer,
 entreprises, enrichissement mock, personas, matching, contacts, campagnes, inbox connectable,
-pipeline d’opportunités, analytics et conformité. Google Workspace et Microsoft 365 restent
-fermés tant que leurs secrets OAuth ne sont pas configurés.
+pipeline d’opportunités, analytics, conformité et durcissement production. Google Workspace et
+Microsoft 365 restent fermés tant que leurs secrets OAuth ne sont pas configurés.
 
 ## Prérequis
 
@@ -36,7 +36,7 @@ Ouvrir ensuite `http://localhost:3000/login`.
 
 ## Variables d’environnement
 
-### Configuration publique des Phases 1 à 8
+### Configuration publique des Phases 1 à 9
 
 | Variable                        | Exposition | Usage                               |
 | ------------------------------- | ---------- | ----------------------------------- |
@@ -86,7 +86,8 @@ migrations doivent être revues puis appliquées par la chaîne de déploiement.
 ## Authentification et autorisation
 
 - `@supabase/ssr` conserve la session dans des cookies ;
-- le proxy racine rafraîchit les jetons avant les composants serveur ;
+- `src/proxy.ts` rafraîchit les jetons et applique les protections HTTP avant les composants
+  serveur ;
 - les contrôles d’interface utilisent la même matrice de rôles que les gardes serveur ;
 - la base reste l’autorité finale grâce aux politiques RLS ;
 - la clé `service_role` n’est chargée que par le client serveur des jobs de synchronisation et
@@ -275,13 +276,44 @@ La Phase 8 livre :
 La route `/api/cron/retention` exige `CRON_SECRET` et `SUPABASE_SERVICE_ROLE_KEY`. Aucune action
 destructive de rétention n’est accessible depuis le navigateur.
 
+## Durcissement production
+
+La Phase 9 livre :
+
+- CSP dynamique avec nonce, HSTS, anti-framing, `nosniff`, contrôle d’origine CSRF et réponses API
+  non mises en cache ;
+- rate limiting HTTP par instance et quotas providers distribués par organisation dans
+  PostgreSQL ;
+- journalisation JSON avec identifiant de requête, durée et statut, sans token, corps ou donnée
+  personnelle ;
+- sondes `/api/health/live` et `/api/health/ready` ;
+- erreurs globales, pages introuvables et réponses API génériques sans fuite de détails internes ;
+- pagination serveur des grands registres, limites explicites et regroupements évitant les
+  parcours quadratiques ;
+- vigie Analytics des blocages de quota, du taux d’erreur et de la durée provider ;
+- workflow GitHub de qualité et E2E Playwright public et authentifié ;
+- runbook d’exploitation et checklist de production.
+
+Les détails sont dans [docs/OPERATIONS.md](docs/OPERATIONS.md) et
+[docs/PRODUCTION_CHECKLIST.md](docs/PRODUCTION_CHECKLIST.md).
+
 ## Qualité et tests
 
 ```powershell
 npm run lint
 npm run typecheck
 npm test
+npm run format:check
 npm run build
+npm run test:e2e
+```
+
+Le raccourci `npm run check` exécute lint, typecheck, tests, format et build. Le scénario
+authentifié utilise `E2E_BASE_URL`, `E2E_USER_EMAIL` et `E2E_USER_PASSWORD` uniquement dans
+l’environnement de test :
+
+```powershell
+npm run test:e2e:authenticated
 ```
 
 Le test d’intégration RLS nécessite une base Supabase locale démarrée :
@@ -302,7 +334,8 @@ l’automatisation inbox → opportunité.
 2. configurer les variables Supabase de l’environnement cible ;
 3. ajouter l’URL Vercel aux redirect URLs Supabase ;
 4. exécuter les migrations via une étape contrôlée avant la mise en production ;
-5. utiliser `npm run build` comme commande de build.
+5. utiliser `npm run build` comme commande de build ;
+6. suivre le smoke test de [la checklist de production](docs/PRODUCTION_CHECKLIST.md).
 
 ## Providers et messagerie
 
@@ -321,7 +354,9 @@ clés et règles d’usage ne sont pas configurées.
 - les RPC atomiques authentifiées sont volontairement `SECURITY DEFINER`, révoquées à `anon` et
   contrôlent rôle et organisation en interne ;
 - l’URL publique est connue, mais les secrets OAuth, webhook, cron, chiffrement et service role
-  doivent encore être ajoutés à l’environnement Vercel.
+  doivent encore être ajoutés à l’environnement Vercel ;
+- Supabase Auth demande encore l’activation de la protection contre les mots de passe compromis ;
+- trois avis npm de sévérité élevée restent à qualifier avant le go-live.
 
 Voir [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) et
 [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) pour l’état détaillé.

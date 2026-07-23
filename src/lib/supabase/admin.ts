@@ -8,6 +8,10 @@ import type { Database } from "@/types/database";
 
 const serviceRoleSchema = z.string().min(1);
 
+export function hasSupabaseAdminCredentials() {
+  return serviceRoleSchema.safeParse(process.env.SUPABASE_SERVICE_ROLE_KEY).success;
+}
+
 export function createSupabaseAdminClient() {
   const { url } = getSupabasePublicConfig();
   const serviceRoleKey = serviceRoleSchema.parse(process.env.SUPABASE_SERVICE_ROLE_KEY);

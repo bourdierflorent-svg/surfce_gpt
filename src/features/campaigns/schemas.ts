@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { postgresUuidSchema } from "@/lib/validation/identifiers";
+
 export const sendWindowSchema = z.object({
   timezone: z.string().trim().min(1).max(80).default("Europe/Paris"),
   weekdays: z.array(z.number().int().min(1).max(7)).min(1).max(7),
@@ -77,11 +79,11 @@ export const campaignActionRequestSchema = z.object({
 });
 
 export const enrollCampaignRequestSchema = z.object({
-  contactId: z.string().uuid(),
+  contactId: postgresUuidSchema,
 });
 
 export const unenrollCampaignRequestSchema = z.object({
-  enrollmentId: z.string().uuid(),
+  enrollmentId: postgresUuidSchema,
   reason: z.string().trim().min(3).max(300).default("retiré manuellement"),
 });
 

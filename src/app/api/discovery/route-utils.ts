@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { ZodError } from "zod";
 
-import { AuthorizationError } from "@/lib/errors/authorization-error";
+import { apiErrorResponse } from "@/lib/http/api-errors";
 
 export function invalidPayload(error: ZodError) {
   return NextResponse.json(
@@ -11,12 +11,8 @@ export function invalidPayload(error: ZodError) {
 }
 
 export function discoveryError(error: unknown) {
-  if (error instanceof AuthorizationError) {
-    return NextResponse.json({ error: "Votre rôle ne permet pas cette action." }, { status: 403 });
-  }
-
-  return NextResponse.json(
-    { error: error instanceof Error ? error.message : "Une erreur inattendue est survenue." },
-    { status: 500 },
-  );
+  return apiErrorResponse(error, {
+    failureMessage:
+      "La recherche ou l’import n’a pas été confirmé. Modifiez les critères ou réessayez.",
+  });
 }

@@ -1,9 +1,7 @@
-import { NextResponse } from "next/server";
-
 import { requireAppAuthContext } from "@/features/auth/server/auth-context";
 import { parseAnalyticsFilters } from "@/features/analytics/schemas";
 import { exportAnalyticsCsv } from "@/features/analytics/server/service";
-import { AuthorizationError } from "@/lib/errors/authorization-error";
+import { apiErrorResponse } from "@/lib/http/api-errors";
 
 export async function GET(request: Request) {
   try {
@@ -20,12 +18,9 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    if (error instanceof AuthorizationError) {
-      return NextResponse.json({ error: error.message }, { status: 403 });
-    }
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "L’export n’a pas abouti." },
-      { status: 500 },
-    );
+    return apiErrorResponse(error, {
+      invalidMessage: "Les filtres de l’export sont invalides.",
+      failureMessage: "L’export n’a pas été généré. Aucun fichier incomplet n’a été conservé.",
+    });
   }
 }

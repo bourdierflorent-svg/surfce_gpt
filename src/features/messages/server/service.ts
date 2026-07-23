@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { loadMessageForSending } from "@/features/campaigns/server/service";
 import { getProviderForOutboundMailbox } from "@/features/mailboxes/server/service";
 import { assertOrganizationPermission } from "@/features/organizations/server/authorization";
+import { runProviderOperation } from "@/lib/providers/quota";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { AppAuthContext } from "@/types/auth";
@@ -22,14 +23,22 @@ async function deliverClaimedMessage(
 ) {
   if (!contact.email) throw new Error("Le destinataire ne possède plus d’adresse e-mail.");
   const provider = await getProviderForOutboundMailbox(client, mailbox);
-  const delivery = await provider.send({
-    messageId: message.id,
-    from: { email: mailbox.email_address, name: mailbox.display_name },
-    to: [{ email: contact.email, name: contact.full_name }],
-    subject: message.subject,
-    bodyText: message.body_text,
-    bodyHtml: message.body_html,
-    idempotencyKey: message.deduplication_key,
+  const delivery = await runProviderOperation({
+    client,
+    organizationId: mailbox.organization_id,
+    provider: provider.name,
+    operation: "send_campaign_message",
+    sourceId: message.id,
+    task: () =>
+      provider.send({
+        messageId: message.id,
+        from: { email: mailbox.email_address, name: mailbox.display_name },
+        to: [{ email: contact.email!, name: contact.full_name }],
+        subject: message.subject,
+        bodyText: message.body_text,
+        bodyHtml: message.body_html,
+        idempotencyKey: message.deduplication_key,
+      }),
   });
   const { data, error } = await client.rpc("finalize_campaign_message", {
     p_message_id: message.id,
@@ -64,20 +73,28 @@ export async function sendTestMessage(
   const { message, contact, mailbox } = await loadMessageForSending(context, messageId);
   const supabase = await createSupabaseServerClient();
   const provider = await getProviderForOutboundMailbox(supabase, mailbox);
-  const result = await provider.send({
-    messageId: message.id,
-    from: { email: mailbox.email_address, name: mailbox.display_name },
-    to: [
-      {
-        email: recipient ?? context.user.email,
-        name: recipient ? undefined : (context.user.fullName ?? undefined),
-      },
-    ],
-    subject: `[TEST] ${message.subject}`,
-    bodyText: message.body_text,
-    bodyHtml: message.body_html,
-    idempotencyKey: `test:${message.deduplication_key}:${recipient ?? context.user.email}`,
-    test: true,
+  const result = await runProviderOperation({
+    client: supabase,
+    organizationId: context.organization.id,
+    provider: provider.name,
+    operation: "send_test_message",
+    sourceId: message.id,
+    task: () =>
+      provider.send({
+        messageId: message.id,
+        from: { email: mailbox.email_address, name: mailbox.display_name },
+        to: [
+          {
+            email: recipient ?? context.user.email,
+            name: recipient ? undefined : (context.user.fullName ?? undefined),
+          },
+        ],
+        subject: `[TEST] ${message.subject}`,
+        bodyText: message.body_text,
+        bodyHtml: message.body_html,
+        idempotencyKey: `test:${message.deduplication_key}:${recipient ?? context.user.email}`,
+        test: true,
+      }),
   });
   return {
     ...result,

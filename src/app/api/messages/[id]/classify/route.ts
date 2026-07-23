@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { requireAppAuthContext } from "@/features/auth/server/auth-context";
 import { classifyInboundMessage } from "@/features/inbox/server/service";
+import { apiErrorResponse } from "@/lib/http/api-errors";
 
 interface MessageRouteProps {
   params: Promise<{ id: string }>;
@@ -19,9 +20,9 @@ export async function POST(request: Request, { params }: MessageRouteProps) {
       await classifyInboundMessage(context, messageId, await request.json()),
     );
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Classification impossible." },
-      { status: 400 },
-    );
+    return apiErrorResponse(error, {
+      invalidMessage: "La classification demandée est invalide.",
+      failureMessage: "La classification n’a pas été modifiée. Réessayez depuis la conversation.",
+    });
   }
 }

@@ -47,6 +47,9 @@ export interface AnalyticsReport {
     providerFailures: number;
     mailboxErrors: number;
     overdueTasks: number;
+    quotaBlocks: number;
+    providerErrorRate: number;
+    providerAverageDurationMs: number;
   };
   options: {
     owners: AnalyticsOption[];

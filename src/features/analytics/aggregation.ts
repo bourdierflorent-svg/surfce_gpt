@@ -11,6 +11,7 @@ import type {
   OpportunityStageRow,
   ProposalRow,
   ProviderJobRow,
+  ProviderUsageEventRow,
   TaskRow,
 } from "@/types/database";
 
@@ -40,6 +41,7 @@ export interface AnalyticsDataset {
   appointments: AppointmentRow[];
   proposals: ProposalRow[];
   providerJobs: ProviderJobRow[];
+  providerUsageEvents?: ProviderUsageEventRow[];
   tasks: TaskRow[];
   mailboxes: MailboxRow[];
   profiles: NamedProfile[];
@@ -206,6 +208,12 @@ export function buildAnalyticsReport(
   );
   const enrichments = providerJobs.filter(
     (item) => item.status === "completed" && /enrich|contact|registry|website/.test(item.job_type),
+  );
+  const providerUsageEvents = (dataset.providerUsageEvents ?? []).filter((item) =>
+    inPeriod(item.created_at, start, end),
+  );
+  const completedProviderEvents = providerUsageEvents.filter(
+    (item) => item.allowed && ["succeeded", "failed"].includes(item.status),
   );
 
   const responseDelays: number[] = [];
@@ -433,6 +441,17 @@ export function buildAnalyticsReport(
           item.status !== "cancelled" &&
           Boolean(item.due_at && asTime(item.due_at) < Date.now()),
       ).length,
+      quotaBlocks: providerUsageEvents.filter((item) => !item.allowed).length,
+      providerErrorRate: completedProviderEvents.length
+        ? (completedProviderEvents.filter((item) => item.status === "failed").length /
+            completedProviderEvents.length) *
+          100
+        : 0,
+      providerAverageDurationMs: average(
+        completedProviderEvents
+          .map((item) => item.duration_ms)
+          .filter((value): value is number => value !== null),
+      ),
     },
     options: {
       owners: optionRows(dataset.profiles.map((item) => [item.id, item.full_name ?? item.email])),

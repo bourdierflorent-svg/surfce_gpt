@@ -14,18 +14,18 @@ racine. Aucun code métier antérieur n’a donc été supprimé ou remplacé.
 
 ## État actuel
 
-| Phase                                | État          | Résultat                                                                                                    |
-| ------------------------------------ | ------------- | ----------------------------------------------------------------------------------------------------------- |
-| Phase 0 — Audit et socle             | Implémentée   | Next.js App Router, TS strict, Tailwind, ESLint, Prettier, Vitest, structure, design system, login et shell |
-| Phase 1 — Auth, organisation et RLS  | Déployée      | Supabase SSR, profils, organisations, memberships, rôles, navigation filtrée, migrations, seed et tests RLS |
-| Phase 2 — Établissements et offres   | Déployée      | CRUD, offres, assets privés, galerie, validations, RLS et seed Stargazing                                   |
-| Phase 3 — Entreprises et Explorer    | Déployée      | MapLibre local, provider mock, import dédupliqué, sources, fiches, RLS et PostGIS                           |
-| Phase 4 — Enrichissement et matching | Déployée      | Providers mock, jobs, persona Zod, validation humaine, score explicable et recommandations                  |
-| Phase 5 — Contacts et campagnes mock | Déployée      | Contacts, vérification, séquences, validation, planification, envoi mock et suppression atomique            |
-| Phase 6 — Gmail/Microsoft et inbox   | Déployée      | OAuth, tokens chiffrés, sync, webhooks, fils, qualification, réponses et arrêt automatique                  |
-| Phase 7 — Opportunités et tâches     | Déployée      | Pipeline configurable, dossiers, tâches, rendez-vous, propositions, revenu pondéré et audit                 |
-| Phase 8 — Analytics et conformité    | Déployée      | 17 KPI sourcés, filtres, exports audités, rétention, droits des personnes et journal d’audit                |
-| Phase 9 — Durcissement production    | Non commencée | Performance, observabilité, sécurité finale et parcours E2E restent hors de cette intervention              |
+| Phase                                | État        | Résultat                                                                                                    |
+| ------------------------------------ | ----------- | ----------------------------------------------------------------------------------------------------------- |
+| Phase 0 — Audit et socle             | Implémentée | Next.js App Router, TS strict, Tailwind, ESLint, Prettier, Vitest, structure, design system, login et shell |
+| Phase 1 — Auth, organisation et RLS  | Déployée    | Supabase SSR, profils, organisations, memberships, rôles, navigation filtrée, migrations, seed et tests RLS |
+| Phase 2 — Établissements et offres   | Déployée    | CRUD, offres, assets privés, galerie, validations, RLS et seed Stargazing                                   |
+| Phase 3 — Entreprises et Explorer    | Déployée    | MapLibre local, provider mock, import dédupliqué, sources, fiches, RLS et PostGIS                           |
+| Phase 4 — Enrichissement et matching | Déployée    | Providers mock, jobs, persona Zod, validation humaine, score explicable et recommandations                  |
+| Phase 5 — Contacts et campagnes mock | Déployée    | Contacts, vérification, séquences, validation, planification, envoi mock et suppression atomique            |
+| Phase 6 — Gmail/Microsoft et inbox   | Déployée    | OAuth, tokens chiffrés, sync, webhooks, fils, qualification, réponses et arrêt automatique                  |
+| Phase 7 — Opportunités et tâches     | Déployée    | Pipeline configurable, dossiers, tâches, rendez-vous, propositions, revenu pondéré et audit                 |
+| Phase 8 — Analytics et conformité    | Déployée    | 17 KPI sourcés, filtres, exports audités, rétention, droits des personnes et journal d’audit                |
+| Phase 9 — Durcissement production    | Implémentée | Sécurité HTTP, quotas, logs structurés, performances, erreurs, CI, E2E et runbooks                          |
 
 ## Identité du produit
 
@@ -309,15 +309,60 @@ racine. Aucun code métier antérieur n’a donc été supprimé ou remplacé.
 - Performance Advisor sans alerte non informationnelle ni clé étrangère non indexée ; les index
   neufs sans activité restent seulement signalés au niveau informationnel.
 
+## Livré en Phase 9
+
+- proxy déplacé au niveau de `src/app` conformément à la convention Next.js, avec rafraîchissement
+  Supabase, identifiant de requête, nonce CSP et journal HTTP structuré ;
+- CSP dynamique, HSTS, `nosniff`, anti-framing, politique de référent stricte, permissions
+  navigateur réduites, COOP et réponses API privées sans cache ;
+- protection CSRF par `Origin` et `Sec-Fetch-Site`, y compris l’origine effective transmise par le
+  host proxy, avec exclusion explicite des crons et webhooks signés ;
+- rate limiting par instance : 120 requêtes API/minute/adresse et 10 tentatives de
+  connexion/minute/adresse ;
+- routes `/api/health/live` et `/api/health/ready`, sans exposition de la valeur des secrets ;
+- instrumentation Next.js et logger JSON filtrant autorisations, cookies, tokens, corps, contenus,
+  e-mails et valeurs ressemblant à des secrets ;
+- gestion centralisée des erreurs API : validation, autorisation, quotas, opposition et panne
+  interne sans fuite du message provider ou SQL ;
+- pages d’erreur globale, d’erreur applicative et 404 alignées sur la direction artistique SURFCE ;
+- deux tables RLS `provider_quotas` et `provider_usage_events`, plus la relation de quota sur
+  `provider_jobs` ;
+- réservation atomique par organisation/provider/opération avec règle wildcard, advisory lock,
+  `Retry-After`, finalisation succès/échec et blocage des jobs avant appel ;
+- neuf quotas initiaux par organisation : repli, six providers mock, Google et Microsoft ;
+- toutes les opérations Places, registre, website, vérification contact, IA, mail et synchronisation
+  encapsulées dans le quota distribué ;
+- vigie Analytics enrichie avec blocages, taux d’erreur et durée moyenne provider ;
+- pagination serveur à 50 éléments sur entreprises et contacts, limites explicites sur les autres
+  registres et regroupement des offres sans parcours N × M ;
+- requêtes Analytics bornées par période et volume, avec lecture dédiée des événements providers ;
+- Playwright configuré avec parcours mock, conformité, CSP/CSRF et parcours propriétaire
+  authentifié ;
+- workflow GitHub `Quality` : installation immuable, lint, typecheck, tests, format, build, audit
+  critique, E2E Chromium et rapport 14 jours ;
+- runbook [docs/OPERATIONS.md](docs/OPERATIONS.md) et checklist
+  [docs/PRODUCTION_CHECKLIST.md](docs/PRODUCTION_CHECKLIST.md) ;
+- deux migrations Phase 9 appliquées au projet Supabase distant ;
+- assertions rollback-only réussies pour quotas, finalisation, trigger de job, rôles, isolation et
+  privilèges ;
+- schéma distant vérifié : 37 tables publiques, 37 avec RLS, 9 quotas SURFCE et aucun événement de
+  test résiduel ;
+- Security Advisor sans nouvelle alerte Phase 9 ; les six RPC historiques contrôlées et la
+  protection Auth à activer restent documentées ;
+- Performance Advisor sans alerte au-dessus du niveau informationnel après séparation des
+  politiques RLS d’administration.
+
 ## Vérifications
 
 | Commande                         | Résultat actuel                                                                 |
 | -------------------------------- | ------------------------------------------------------------------------------- |
 | `npm run lint`                   | Réussi — 0 erreur, 0 avertissement                                              |
 | `npm run typecheck`              | Réussi                                                                          |
-| `npm test`                       | Réussi — 19 fichiers, 148 tests                                                 |
+| `npm test`                       | Réussi — 20 fichiers, 161 tests                                                 |
 | `npm run format:check`           | Réussi                                                                          |
-| `npm run build`                  | Réussi — routes Phase 8 et précédentes générées avec Next.js 16.2.11            |
+| `npm run build`                  | Réussi — routes des Phases 0 à 9 générées avec Next.js 16.2.11                  |
+| `npm run test:e2e`               | Réussi — 5 scénarios publics, 1 scénario authentifié conditionnel ignoré        |
+| E2E propriétaire authentifié     | Réussi — 1 parcours complet et opposition bloquée                               |
 | `npm run test:rls`               | Tenté — échec de connexion à PostgreSQL local, Docker/base locale indisponible  |
 | Assertions RLS distantes         | Réussi — isolation de deux organisations et permissions admin/viewer validées   |
 | Supabase Security Advisor        | `anon` bloqué ; 6 RPC authentifiées intentionnelles et protection Auth à régler |
@@ -343,6 +388,9 @@ racine. Aucun code métier antérieur n’a donc été supprimé ou remplacé.
 | Assertions RLS Phase 8           | Réussi — rôles, audit, confidentialité, opposition et rétention rollback-only   |
 | Schéma distant Phase 8           | Réussi — 4 tables RLS, 8 politiques dédiées, 5 migrations et 0 FK non indexée   |
 | Données mock Phase 8             | Réussi — 1 politique, 1 export, 1 simulation et 1 demande d’accès               |
+| Assertions RLS Phase 9           | Réussi — quotas, jobs, rôles, isolation et privilèges, rollback final           |
+| Schéma distant Phase 9           | Réussi — 2 tables RLS, 2 migrations, 9 quotas et 0 warning performance          |
+| GitHub Actions                   | Configuré — gate qualité, audit critique et E2E Chromium                        |
 
 Les invariants RLS sont aussi contrôlés par Vitest. Les scénarios distants ont été exécutés avec des
 utilisateurs fictifs dans des transactions ensuite annulées. Le test pgTAP local reste disponible
@@ -380,10 +428,14 @@ Variables optionnelles ou réservées aux autres providers :
 - `SIRENE_API_KEY` et `SIRENE_API_BASE_URL` ;
 - `HUNTER_API_KEY` ;
 - `DROPCONTACT_API_KEY`.
+- `SENTRY_DSN`, réservé à une future télémétrie externe explicitement validée.
 
 Les sélecteurs `AI_PROVIDER`, `COMPANY_REGISTRY_PROVIDER`, `CONTACT_VERIFICATION_PROVIDER` et
 `MAIL_PROVIDER` peuvent rester absents : le fallback serveur `mock` est explicite. Le scénario mock
-des Phases 6 à 8 reste utilisable sans appel externe ni coût.
+des Phases 6 à 9 reste utilisable sans appel externe ni coût.
+
+`E2E_BASE_URL`, `E2E_USER_EMAIL` et `E2E_USER_PASSWORD` sont uniquement des variables de test
+éphémères. Elles ne doivent pas être ajoutées au runtime Vercel.
 
 ## Écarts et risques
 
@@ -408,15 +460,19 @@ des Phases 6 à 8 reste utilisable sans appel externe ni coût.
 7. Les valeurs commerciales des lieux, offres, entreprises, personas et recommandations sont des
    données de démonstration à valider, jamais des promesses définitives. Toutes les sociétés
    Explorer et tous les contacts Phase 5 sont fictifs.
-8. Le mode aperçu sert au contrôle visuel uniquement et ne remplace pas une session Supabase.
+8. Le rate limiting HTTP est local à chaque instance Vercel. Les quotas providers PostgreSQL sont
+   distribués, mais une protection globale supplémentaire pourra être ajoutée si le trafic public
+   l’exige.
+9. Le mode aperçu sert au contrôle visuel uniquement et ne remplace pas une session Supabase.
 
-## Plan des prochaines phases
+## Après la Phase 9
 
-1. **Phase 9** — durcissement production, performance, observabilité, sécurité et E2E.
+Le cahier des charges fourni s’arrête à la Phase 9. Aucune Phase 10 n’est définie et aucun provider
+externe supplémentaire n’a été commencé.
 
-## Prochaine phase
+## Prochaine étape
 
-**Phase 9 — Durcissement production et E2E.** La prochaine intervention doit mesurer et optimiser
-les requêtes, ajouter l’observabilité et les alertes, durcir les en-têtes et la sécurité, puis
-couvrir les parcours critiques en E2E. Aucun travail de Phase 9 n’a commencé dans cette
-intervention.
+**Configuration et acceptation production.** La prochaine intervention doit compléter les
+variables Vercel obligatoires, activer la protection Supabase Auth contre les mots de passe
+compromis, qualifier les trois avis npm, rejouer le smoke test de production et obtenir le go/no-go
+du propriétaire. Les providers réels restent une décision post-MVP explicite.

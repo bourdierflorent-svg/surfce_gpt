@@ -151,6 +151,7 @@ export async function listVenues(
   if (options.query?.trim()) {
     venueQuery = venueQuery.ilike("name", `%${options.query.trim()}%`);
   }
+  venueQuery = venueQuery.limit(100);
 
   const [{ data: venues, error: venuesError }, { data: offers, error: offersError }] =
     await Promise.all([
@@ -165,8 +166,14 @@ export async function listVenues(
     throw new Error("Impossible de charger les établissements.");
   }
 
+  const offersByVenue = new Map<string, Array<{ venue_id: string; is_active: boolean }>>();
+  for (const offer of offers ?? []) {
+    const venueOffers = offersByVenue.get(offer.venue_id) ?? [];
+    venueOffers.push(offer);
+    offersByVenue.set(offer.venue_id, venueOffers);
+  }
   return (venues ?? []).map((venue) => {
-    const venueOffers = (offers ?? []).filter((offer) => offer.venue_id === venue.id);
+    const venueOffers = offersByVenue.get(venue.id) ?? [];
     return {
       ...venue,
       offerCount: venueOffers.length,

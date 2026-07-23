@@ -5,6 +5,7 @@ import { getProviderForOutboundMailbox } from "@/features/mailboxes/server/servi
 import { hashJson } from "@/lib/ai/hash";
 import { THREAD_REPLY_PROMPT_VERSION } from "@/lib/ai/prompts/thread-reply.v1";
 import { THREAD_SUMMARY_PROMPT_VERSION } from "@/lib/ai/prompts/thread-summary.v1";
+import { runProviderOperation } from "@/lib/providers/quota";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getAiProvider } from "@/providers/ai";
 import type { ThreadIntelligenceInput } from "@/providers/ai/types";
@@ -122,7 +123,17 @@ export async function summarizeThread(
   const detail = await getWritableThread(context, threadId);
   const input = buildIntelligenceInput(threadId, detail);
   const provider = getAiProvider();
-  const output = threadSummaryOutputSchema.parse(await provider.summarizeThread(input));
+  const supabase = await createSupabaseServerClient();
+  const output = threadSummaryOutputSchema.parse(
+    await runProviderOperation({
+      client: supabase,
+      organizationId: context.organization.id,
+      provider: provider.name,
+      operation: "thread_summary",
+      sourceId: threadId,
+      task: () => provider.summarizeThread(input),
+    }),
+  );
   await recordAiRun(
     context,
     threadId,
@@ -131,7 +142,6 @@ export async function summarizeThread(
     input,
     output as unknown as Json,
   );
-  const supabase = await createSupabaseServerClient();
   const { error } = await supabase
     .from("mail_threads")
     .update({
@@ -153,7 +163,17 @@ export async function draftThreadReply(
   const detail = await getWritableThread(context, threadId);
   const input = buildIntelligenceInput(threadId, detail);
   const provider = getAiProvider();
-  const output = suggestedReplyOutputSchema.parse(await provider.draftThreadReply(input));
+  const supabase = await createSupabaseServerClient();
+  const output = suggestedReplyOutputSchema.parse(
+    await runProviderOperation({
+      client: supabase,
+      organizationId: context.organization.id,
+      provider: provider.name,
+      operation: "thread_reply_draft",
+      sourceId: threadId,
+      task: () => provider.draftThreadReply(input),
+    }),
+  );
   await recordAiRun(
     context,
     threadId,
@@ -162,7 +182,6 @@ export async function draftThreadReply(
     input,
     output as unknown as Json,
   );
-  const supabase = await createSupabaseServerClient();
   const { error } = await supabase
     .from("mail_threads")
     .update({
@@ -216,6 +235,8 @@ export async function replyToThread(context: AppAuthContext, threadId: string, i
   if (typeof sender.email !== "string" || !sender.email.includes("@")) {
     throw new Error("L’adresse de réponse du contact est absente.");
   }
+  const recipientEmail = sender.email;
+  const replyToProviderMessageId = latestInbound.provider_message_id;
 
   const supabase = await createSupabaseServerClient();
   const fingerprint = createHash("sha256")
@@ -283,28 +304,36 @@ export async function replyToThread(context: AppAuthContext, threadId: string, i
   try {
     const provider = await getProviderForOutboundMailbox(supabase, detail.mailbox);
     const references = record(latestInbound.headers).references;
-    const delivery = await provider.send({
-      messageId: pending.id,
-      from: { email: detail.mailbox.email_address, name: detail.mailbox.display_name },
-      to: [
-        {
-          email: sender.email,
-          name: typeof sender.name === "string" ? sender.name : undefined,
-        },
-      ],
-      subject: parsed.subject,
-      bodyText: parsed.bodyText,
-      bodyHtml,
-      idempotencyKey: deduplicationKey,
-      providerThreadId: detail.thread.provider_thread_id,
-      replyToProviderMessageId: latestInbound.provider_message_id,
-      inReplyTo: latestInbound.internet_message_id ?? undefined,
-      references:
-        typeof references === "string"
-          ? references.split(/\s+/).filter(Boolean)
-          : latestInbound.internet_message_id
-            ? [latestInbound.internet_message_id]
-            : [],
+    const delivery = await runProviderOperation({
+      client: supabase,
+      organizationId: context.organization.id,
+      provider: provider.name,
+      operation: "send_reply",
+      sourceId: pending.id,
+      task: () =>
+        provider.send({
+          messageId: pending.id,
+          from: { email: detail.mailbox.email_address, name: detail.mailbox.display_name },
+          to: [
+            {
+              email: recipientEmail,
+              name: typeof sender.name === "string" ? sender.name : undefined,
+            },
+          ],
+          subject: parsed.subject,
+          bodyText: parsed.bodyText,
+          bodyHtml,
+          idempotencyKey: deduplicationKey,
+          providerThreadId: detail.thread.provider_thread_id,
+          replyToProviderMessageId,
+          inReplyTo: latestInbound.internet_message_id ?? undefined,
+          references:
+            typeof references === "string"
+              ? references.split(/\s+/).filter(Boolean)
+              : latestInbound.internet_message_id
+                ? [latestInbound.internet_message_id]
+                : [],
+        }),
     });
     const status = delivery.mock ? "sent_mock" : "sent";
     const { error: updateError } = await supabase

@@ -8,6 +8,9 @@ import type { AppAuthContext } from "@/types/auth";
 import { buildAnalyticsReport, type AnalyticsDataset } from "../aggregation";
 import type { AnalyticsFilters } from "../schemas";
 
+const ANALYTICS_ROW_LIMIT = 5_000;
+const ANALYTICS_MESSAGE_LIMIT = 10_000;
+
 function previewDataset(filters: AnalyticsFilters): AnalyticsDataset {
   const organizationId = "10000000-0000-0000-0000-000000000001";
   const ownerId = "00000000-0000-0000-0000-000000000000";
@@ -185,31 +188,98 @@ export async function getAnalyticsReport(context: AppAuthContext, filters: Analy
 
   const supabase = await createSupabaseServerClient();
   const organizationId = context.organization.id;
+  const periodStart = `${filters.start}T00:00:00.000Z`;
+  const periodEnd = `${filters.end}T23:59:59.999Z`;
+  const messageLookback = new Date(periodStart);
+  messageLookback.setUTCDate(messageLookback.getUTCDate() - 90);
   const queries = await Promise.all([
     supabase
       .from("companies")
       .select("*")
       .eq("organization_id", organizationId)
-      .is("deleted_at", null),
-    supabase.from("contacts").select("*").eq("organization_id", organizationId),
-    supabase.from("campaigns").select("*").eq("organization_id", organizationId),
-    supabase.from("campaign_enrollments").select("*").eq("organization_id", organizationId),
-    supabase.from("mail_threads").select("*").eq("organization_id", organizationId),
-    supabase.from("messages").select("*").eq("organization_id", organizationId),
-    supabase.from("opportunities").select("*").eq("organization_id", organizationId),
-    supabase.from("opportunity_stages").select("*").eq("organization_id", organizationId),
-    supabase.from("appointments").select("*").eq("organization_id", organizationId),
-    supabase.from("proposals").select("*").eq("organization_id", organizationId),
-    supabase.from("provider_jobs").select("*").eq("organization_id", organizationId),
-    supabase.from("tasks").select("*").eq("organization_id", organizationId),
-    supabase.from("mailboxes").select("*").eq("organization_id", organizationId),
+      .is("deleted_at", null)
+      .limit(ANALYTICS_ROW_LIMIT),
+    supabase
+      .from("contacts")
+      .select("*")
+      .eq("organization_id", organizationId)
+      .limit(ANALYTICS_ROW_LIMIT),
+    supabase.from("campaigns").select("*").eq("organization_id", organizationId).limit(1_000),
+    supabase
+      .from("campaign_enrollments")
+      .select("*")
+      .eq("organization_id", organizationId)
+      .limit(ANALYTICS_ROW_LIMIT),
+    supabase
+      .from("mail_threads")
+      .select("*")
+      .eq("organization_id", organizationId)
+      .limit(ANALYTICS_ROW_LIMIT),
+    supabase
+      .from("messages")
+      .select("*")
+      .eq("organization_id", organizationId)
+      .gte("created_at", messageLookback.toISOString())
+      .lte("created_at", periodEnd)
+      .limit(ANALYTICS_MESSAGE_LIMIT),
+    supabase
+      .from("opportunities")
+      .select("*")
+      .eq("organization_id", organizationId)
+      .gte("created_at", periodStart)
+      .lte("created_at", periodEnd)
+      .limit(ANALYTICS_ROW_LIMIT),
+    supabase
+      .from("opportunity_stages")
+      .select("*")
+      .eq("organization_id", organizationId)
+      .limit(200),
+    supabase
+      .from("appointments")
+      .select("*")
+      .eq("organization_id", organizationId)
+      .gte("created_at", periodStart)
+      .lte("created_at", periodEnd)
+      .limit(ANALYTICS_ROW_LIMIT),
+    supabase
+      .from("proposals")
+      .select("*")
+      .eq("organization_id", organizationId)
+      .gte("created_at", periodStart)
+      .lte("created_at", periodEnd)
+      .limit(ANALYTICS_ROW_LIMIT),
+    supabase
+      .from("provider_jobs")
+      .select("*")
+      .eq("organization_id", organizationId)
+      .gte("created_at", messageLookback.toISOString())
+      .lte("created_at", periodEnd)
+      .limit(ANALYTICS_ROW_LIMIT),
+    supabase
+      .from("tasks")
+      .select("*")
+      .eq("organization_id", organizationId)
+      .limit(ANALYTICS_ROW_LIMIT),
+    supabase.from("mailboxes").select("*").eq("organization_id", organizationId).limit(500),
     supabase
       .from("memberships")
       .select("user_id")
       .eq("organization_id", organizationId)
-      .eq("is_active", true),
-    supabase.from("venues").select("id, name").eq("organization_id", organizationId),
-    supabase.from("venue_offers").select("id, name").eq("organization_id", organizationId),
+      .eq("is_active", true)
+      .limit(500),
+    supabase.from("venues").select("id, name").eq("organization_id", organizationId).limit(1_000),
+    supabase
+      .from("venue_offers")
+      .select("id, name")
+      .eq("organization_id", organizationId)
+      .limit(1_000),
+    supabase
+      .from("provider_usage_events")
+      .select("*")
+      .eq("organization_id", organizationId)
+      .gte("created_at", periodStart)
+      .lte("created_at", periodEnd)
+      .limit(ANALYTICS_ROW_LIMIT),
   ]);
   const firstError = queries.find((query) => query.error)?.error;
   if (firstError) throw new Error(`Impossible de calculer les analyses : ${firstError.message}`);
@@ -239,6 +309,7 @@ export async function getAnalyticsReport(context: AppAuthContext, filters: Analy
       profiles: profiles.data ?? [],
       venues: queries[14].data ?? [],
       offers: queries[15].data ?? [],
+      providerUsageEvents: queries[16].data ?? [],
     },
     filters,
   );

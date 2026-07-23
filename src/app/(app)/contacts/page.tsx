@@ -2,8 +2,10 @@ import { ArrowUpRight, ContactRound, MailCheck, Search, ShieldOff } from "lucide
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
+import { PaginationNav } from "@/components/ui/pagination-nav";
 import { requireAppAuthContext } from "@/features/auth/server/auth-context";
 import { listContacts } from "@/features/contacts/server/queries";
+import { parsePage } from "@/lib/pagination";
 import { cn } from "@/lib/utils";
 import type { ContactStatus } from "@/types/database";
 
@@ -18,7 +20,7 @@ const statusLabels: Record<ContactStatus, string> = {
 };
 
 interface ContactsPageProps {
-  searchParams: Promise<{ q?: string; status?: string }>;
+  searchParams: Promise<{ q?: string; status?: string; page?: string }>;
 }
 
 export default async function ContactsPage({ searchParams }: ContactsPageProps) {
@@ -27,7 +29,12 @@ export default async function ContactsPage({ searchParams }: ContactsPageProps) 
   const status =
     params.status && params.status in statusLabels ? (params.status as ContactStatus) : "all";
   const query = params.q?.trim() ?? "";
-  const contacts = await listContacts(context, { query, status });
+  const result = await listContacts(context, {
+    query,
+    status,
+    page: parsePage(params.page),
+  });
+  const contacts = result.items;
   const validCount = contacts.filter((contact) => contact.email_status === "valid").length;
   const suppressedCount = contacts.filter((contact) => contact.do_not_contact).length;
 
@@ -62,7 +69,7 @@ export default async function ContactsPage({ searchParams }: ContactsPageProps) 
         <div className="border-b border-border p-5 sm:border-b-0 sm:border-r">
           <ContactRound className="size-4 text-primary" aria-hidden="true" />
           <p className="font-display mt-3 text-3xl font-semibold tracking-[-0.04em]">
-            {contacts.length}
+            {result.total}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">contacts dans ce filtre</p>
         </div>
@@ -137,7 +144,7 @@ export default async function ContactsPage({ searchParams }: ContactsPageProps) 
                 className="group grid gap-4 px-5 py-5 hover:bg-muted/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring lg:grid-cols-[3rem_1.15fr_1fr_0.9fr_0.7fr_3rem] lg:items-center"
               >
                 <span className="font-data text-xs tabular-nums text-muted-foreground">
-                  {String(index + 1).padStart(2, "0")}
+                  {String(result.offset + index + 1).padStart(2, "0")}
                 </span>
                 <div className="min-w-0">
                   <p className="break-words font-display text-xl font-semibold tracking-[-0.035em] group-hover:text-primary">
@@ -181,6 +188,13 @@ export default async function ContactsPage({ searchParams }: ContactsPageProps) 
           </div>
         </section>
       )}
+      <PaginationNav
+        pathname="/contacts"
+        page={result.page}
+        pageCount={result.pageCount}
+        total={result.total}
+        params={{ q: query || undefined, status }}
+      />
     </div>
   );
 }

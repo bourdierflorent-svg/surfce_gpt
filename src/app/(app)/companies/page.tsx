@@ -2,14 +2,16 @@ import { ArrowUpRight, Building2, Database, MapPin, Search, ShieldCheck } from "
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
+import { PaginationNav } from "@/components/ui/pagination-nav";
 import { requireAppAuthContext } from "@/features/auth/server/auth-context";
 import { listCompanies } from "@/features/companies/server/queries";
 import { COMPANY_STATUS_LABELS } from "@/features/companies/types";
+import { parsePage } from "@/lib/pagination";
 import { cn } from "@/lib/utils";
 import type { CompanyStatus } from "@/types/database";
 
 interface CompaniesPageProps {
-  searchParams: Promise<{ q?: string; status?: string }>;
+  searchParams: Promise<{ q?: string; status?: string; page?: string }>;
 }
 
 function selectedStatus(value?: string): CompanyStatus | "all" {
@@ -21,7 +23,8 @@ export default async function CompaniesPage({ searchParams }: CompaniesPageProps
   const params = await searchParams;
   const status = selectedStatus(params.status);
   const query = params.q?.trim() ?? "";
-  const companies = await listCompanies(context, { query, status });
+  const result = await listCompanies(context, { query, status, page: parsePage(params.page) });
+  const companies = result.items;
   const qualifiedCount = companies.filter(
     (company) => (company.qualification_score ?? 0) >= 70,
   ).length;
@@ -57,7 +60,7 @@ export default async function CompaniesPage({ searchParams }: CompaniesPageProps
         <div className="border-b border-border p-5 sm:border-b-0 sm:border-r">
           <Building2 className="size-4 text-primary" aria-hidden="true" />
           <p className="font-display mt-3 text-3xl font-semibold tracking-[-0.04em]">
-            {companies.length}
+            {result.total}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">dans ce filtre</p>
         </div>
@@ -66,7 +69,7 @@ export default async function CompaniesPage({ searchParams }: CompaniesPageProps
           <p className="font-display mt-3 text-3xl font-semibold tracking-[-0.04em]">
             {qualifiedCount}
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">score ≥ 70</p>
+          <p className="mt-1 text-xs text-muted-foreground">score ≥ 70 sur cette page</p>
         </div>
         <div className="p-5">
           <Database className="size-4 text-primary" aria-hidden="true" />
@@ -141,7 +144,7 @@ export default async function CompaniesPage({ searchParams }: CompaniesPageProps
               >
                 <span className="absolute inset-y-0 left-0 w-1 bg-primary/70" aria-hidden="true" />
                 <span className="font-data text-xs tabular-nums text-muted-foreground">
-                  {String(index + 1).padStart(2, "0")}
+                  {String(result.offset + index + 1).padStart(2, "0")}
                 </span>
                 <div className="min-w-0">
                   <h2 className="font-display truncate text-xl font-semibold tracking-[-0.035em] group-hover:text-primary">
@@ -190,6 +193,13 @@ export default async function CompaniesPage({ searchParams }: CompaniesPageProps
           </div>
         </section>
       )}
+      <PaginationNav
+        pathname="/companies"
+        page={result.page}
+        pageCount={result.pageCount}
+        total={result.total}
+        params={{ q: query || undefined, status }}
+      />
     </div>
   );
 }

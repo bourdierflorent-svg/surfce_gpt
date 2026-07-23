@@ -1,5 +1,6 @@
 import { assertOrganizationPermission } from "@/features/organizations/server/authorization";
 import { closePolygonRing } from "@/lib/geo/geometry";
+import { runProviderOperation } from "@/lib/providers/quota";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getPlacesProvider, type PlaceCandidate } from "@/providers/places";
 import type { AppAuthContext } from "@/types/auth";
@@ -45,7 +46,16 @@ export async function searchDiscovery(
   input: DiscoverySearchInput,
 ): Promise<DiscoverySearchResponse> {
   assertOrganizationPermission(context.membership.role, "companies:read");
-  const result = await getPlacesProvider().search(input);
+  const provider = getPlacesProvider();
+  const result = context.isPreview
+    ? await provider.search(input)
+    : await runProviderOperation({
+        client: await createSupabaseServerClient(),
+        organizationId: context.organization.id,
+        provider: provider.name,
+        operation: "search",
+        task: () => provider.search(input),
+      });
 
   if (context.isPreview || result.results.length === 0) {
     return {
@@ -89,10 +99,17 @@ export async function importDiscoveryCandidate(
   assertOrganizationPermission(context.membership.role, "companies:write");
   if (context.isPreview) throw new Error("L’import est désactivé en mode aperçu.");
 
-  const candidate = await getPlacesProvider().getDetails(externalId);
+  const supabase = await createSupabaseServerClient();
+  const provider = getPlacesProvider();
+  const candidate = await runProviderOperation({
+    client: supabase,
+    organizationId: context.organization.id,
+    provider: provider.name,
+    operation: "get_details",
+    task: () => provider.getDetails(externalId),
+  });
   if (!candidate) throw new Error("Cette société fictive n’est plus disponible.");
 
-  const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc("import_discovered_company", {
     p_organization_id: context.organization.id,
     p_company: candidateToJson(candidate),

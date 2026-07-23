@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { ProviderQuotaError } from "@/lib/providers/quota";
 import type { AppAuthContext } from "@/types/auth";
 import type { Json, ProviderJobRow } from "@/types/database";
 
@@ -17,6 +18,12 @@ interface StartJobInput {
 export interface StartedJob {
   job: ProviderJobRow;
   reused: boolean;
+}
+
+function throwProviderJobError(error: { message: string; hint?: string } | null) {
+  if (error?.message.includes("provider_quota_exceeded")) {
+    throw new ProviderQuotaError(Number(error.hint) || 60);
+  }
 }
 
 export async function startProviderJob(
@@ -54,7 +61,10 @@ export async function startProviderJob(
       .eq("id", existing.id)
       .select("*")
       .single();
-    if (error) throw new Error("La relance du traitement n’a pas pu démarrer.");
+    if (error) {
+      throwProviderJobError(error);
+      throw new Error("La relance du traitement n’a pas pu démarrer.");
+    }
     return { job: data, reused: false };
   }
 
@@ -75,7 +85,10 @@ export async function startProviderJob(
     })
     .select("*")
     .single();
-  if (error) throw new Error("Le traitement n’a pas pu être journalisé.");
+  if (error) {
+    throwProviderJobError(error);
+    throw new Error("Le traitement n’a pas pu être journalisé.");
+  }
   return { job: data, reused: false };
 }
 

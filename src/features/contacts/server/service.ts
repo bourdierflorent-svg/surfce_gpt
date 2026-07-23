@@ -1,4 +1,5 @@
 import { assertOrganizationPermission } from "@/features/organizations/server/authorization";
+import { runProviderOperation } from "@/lib/providers/quota";
 import {
   completeProviderJob,
   failProviderJob,
@@ -80,11 +81,19 @@ export async function verifyContactEmail(
   }
 
   try {
-    const result = await provider.verifyEmail({
-      contactId: contact.id,
-      fullName: contact.full_name,
-      email: contact.email,
-      companyDomain: company.domain,
+    const result = await runProviderOperation({
+      client: supabase,
+      organizationId: context.organization.id,
+      provider: provider.name,
+      operation: "email_verification",
+      sourceId: contact.id,
+      task: () =>
+        provider.verifyEmail({
+          contactId: contact.id,
+          fullName: contact.full_name,
+          email: contact.email!,
+          companyDomain: company.domain,
+        }),
     });
     const sourcePayload = {
       organization_id: context.organization.id,

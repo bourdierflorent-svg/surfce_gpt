@@ -281,6 +281,8 @@ function normalize(value: string): string {
 }
 
 export class MockPlacesProvider implements PlaceSearchProvider {
+  readonly name = "mock_places";
+
   async search(input: PlaceSearchInput): Promise<PlaceSearchResult> {
     const query = normalize(`${input.query ?? ""} ${input.category ?? ""}`);
     const terms = query.split(/\s+/).filter((term) => term.length > 1);

@@ -82,10 +82,10 @@ export const fr = {
     },
     values: {
       serverAndDatabase: "Serveur + base",
-      protectedTables: "35 tables métier",
+      protectedTables: "37 tables métier",
     },
     scopeTitle: "Périmètre livré",
-    scopeDescription: "Les Phases 0 à 8 sont maintenant livrées.",
+    scopeDescription: "Les Phases 0 à 9 sont maintenant livrées.",
     scopeItems: [
       "Authentification, organisations et rôles",
       "Isolation multi-tenant par Row Level Security",
@@ -106,10 +106,13 @@ export const fr = {
       "Réponse positive transformable en opportunité auditée",
       "KPI sourcés, filtres transverses et export CSV audité",
       "Rétention simulable, droits des personnes et journal d’audit",
+      "Quotas providers distribués et vigie d’exploitation",
+      "En-têtes, CSRF, rate limiting et erreurs sans fuite",
+      "Parcours E2E public, authentifié et conformité",
     ],
-    nextTitle: "Prochaine étape",
+    nextTitle: "État de production",
     nextDescription:
-      "La Phase 9 durcira la production, les performances, l’observabilité et les parcours E2E.",
+      "Le MVP spécifié est complet. La suite concerne la configuration Vercel, l’acceptation métier et l’exploitation.",
   },
   settings: {
     eyebrow: "Paramètres",

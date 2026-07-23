@@ -1,4 +1,4 @@
-# Architecture SURFCE — Phases 0 à 7
+# Architecture SURFCE — Phases 0 à 9
 
 ## Principes
 
@@ -30,6 +30,7 @@ src/features/messages/           Génération, test et traitement mock
 src/features/mailboxes/          OAuth, chiffrement, synchronisation et watches
 src/features/inbox/              Conversations, classification, résumé et réponse
 src/features/opportunities/      Pipeline, tâches, rendez-vous, propositions et automatisations
+src/features/analytics/          Agrégation, filtres, KPI et vigie d’exploitation
 src/providers/places/            Contrat provider et implémentation mock
 src/providers/registries/        Contrat registre et implémentation mock
 src/providers/enrichment/        Contrat analyse website et implémentation mock
@@ -40,8 +41,12 @@ src/components/map/              Rendu MapLibre et couches GeoJSON locales
 src/components/forms/            Associations accessibles entre labels, aides et erreurs
 src/lib/geo/                      Distance, cercle et inclusion polygonale
 src/lib/permissions/             Matrice de rôles centralisée
+src/lib/http/                    Sécurité des requêtes et réponses d’erreur API
+src/lib/observability/           Journalisation structurée et filtrage des secrets
+src/lib/providers/               Réservation et finalisation des quotas distribués
 src/lib/supabase/                Clients navigateur, serveur et proxy
 src/types/                       Contrats de domaine et types de base
+e2e/                             Parcours Playwright publics et authentifiés
 supabase/migrations/             Schéma PostgreSQL versionné
 supabase/tests/                  Tests pgTAP exécutés contre PostgreSQL
 tests/                           Tests unitaires et invariants statiques
@@ -103,7 +108,7 @@ inachevée.
 
 ## RLS
 
-Les trente et une tables des Phases 1 à 7 ont RLS activée. Les fonctions privées `is_org_member`,
+Les trente-sept tables des Phases 1 à 9 ont RLS activée. Les fonctions privées `is_org_member`,
 `has_org_role` et `shares_org_with` utilisent `security definer` et un `search_path` vide pour
 éviter la récursion des politiques et le détournement de résolution de noms. Elles vivent dans le
 schéma non exposé `private` ; seuls des wrappers `security invoker` contrôlés sont publiés.
@@ -334,6 +339,53 @@ Les écritures passent par le client Supabase authentifié et restent soumises a
 La RPC inbox est `SECURITY DEFINER` pour garantir l’atomicité, révoquée à `anon` et protégée par les
 contrôles de conversation et de rôle internes.
 
+## Modèle et flux Phase 8
+
+`compliance_settings` porte les durées de conservation et la base légale par organisation.
+`analytics_exports`, `retention_runs` et `privacy_requests` constituent des journaux minimaux,
+sans copie de fichier exporté ni duplication de donnée personnelle.
+
+L’agrégation Analytics applique une période maximale, des filtres d’organisation et des bornes
+explicites à chaque lecture. Les métriques conservent leur définition, leur source et leur
+dénominateur. L’export CSV utilise une liste blanche de colonnes non sensibles et inscrit
+uniquement ses métadonnées et son empreinte.
+
+La rétention est simulable par un administrateur et exécutable uniquement par le `service_role`.
+L’anonymisation retire les données personnelles et le contenu des messages, arrête les séquences,
+mais conserve la preuve d’opposition.
+
+## Modèle et flux Phase 9
+
+`provider_quotas` définit une fenêtre et un maximum par organisation, provider et opération.
+`provider_usage_events` trace la réservation, le résultat, la durée et un code d’erreur sans
+conserver la requête provider. `provider_jobs.quota_event_id` relie un traitement à sa réservation.
+
+1. le service appelle `consume_provider_quota` avant toute opération provider ;
+2. la RPC `SECURITY INVOKER` vérifie le membership ou le rôle service, choisit la règle la plus
+   précise et verrouille la fenêtre par advisory lock transactionnel ;
+3. un dépassement direct renvoie `429`, tandis qu’un trigger bloque un job avant son démarrage ;
+4. `finalize_provider_operation` inscrit uniquement succès/échec, durée et code ;
+5. Analytics agrège blocages, taux d’erreur et durée moyenne ;
+6. les assertions distantes valident quotas, triggers, RLS, isolation et privilèges dans une
+   transaction annulée.
+
+Le proxy Next place un `x-request-id` et un nonce CSP sur chaque requête, rejette les mutations
+cross-site, applique une limite HTTP par instance et renouvelle ensuite la session Supabase. Les
+callbacks cron/webhook restent hors du contrôle CSRF et appliquent leur secret ou signature
+propre.
+
+`instrumentation.ts` journalise le démarrage et les erreurs de requête Next. Les logs JSON filtrent
+les champs sensibles et ne contiennent ni corps, ni e-mail, ni clé. Les sondes live/ready
+différencient disponibilité du processus et configuration runtime.
+
+Les registres entreprises et contacts sont paginés côté serveur. Les lectures Analytics, campagnes
+et établissements ont des limites explicites ; les offres sont regroupées par `Map` pour éviter
+les parcours N × M.
+
+Playwright couvre le parcours mock, la conformité, les en-têtes et le CSRF. Un scénario séparé,
+activé uniquement avec des variables éphémères, vérifie la connexion propriétaire, les pages
+critiques et le blocage d’opposition.
+
 ## Design system et direction Phases 2 et 3
 
 Le thème lumineux utilise des tokens CSS sémantiques : fond, carte, premier plan, primaire, muted,
@@ -375,12 +427,17 @@ les opportunités des dossiers en mouvement et la bande montant × probabilité 
 constitue la signature visuelle. La vue évite les cartes Kanban génériques et conserve une
 alternative clavier pour chaque déplacement.
 
+La Phase 8 adopte le « pupitre de preuve » : métriques sourcées, dénominateurs visibles et
+gouvernance calme. La Phase 9 conserve cette direction pour les erreurs et la pagination, sans
+ajouter de couche visuelle décorative à des états opérationnels.
+
 ## Décisions différées
 
 - implémentations réelles SIRENE, website, Hunter, Dropcontact et OpenAI : après configuration et
   validation de leurs conditions d’usage ;
 - providers réels Places, SIRENE, Hunter, Dropcontact et OpenAI : après validation de leurs coûts
   et conditions d’usage ;
-- dashboard métier, analytics et conformité : Phase 8 ;
 - activation des crons de production : après ajout de `CRON_SECRET` et
-  `SUPABASE_SERVICE_ROLE_KEY` dans Vercel.
+  `SUPABASE_SERVICE_ROLE_KEY` dans Vercel ;
+- éventuelle télémétrie externe : après choix explicite du fournisseur, de la région et des règles
+  de minimisation des données.

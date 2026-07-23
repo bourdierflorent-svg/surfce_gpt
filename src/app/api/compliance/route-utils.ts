@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { ZodError } from "zod";
 
-import { AuthorizationError } from "@/lib/errors/authorization-error";
+import { apiErrorResponse } from "@/lib/http/api-errors";
 
 export function invalidComplianceRequest(error: ZodError) {
   return NextResponse.json(
@@ -11,11 +11,8 @@ export function invalidComplianceRequest(error: ZodError) {
 }
 
 export function complianceActionError(error: unknown) {
-  if (error instanceof AuthorizationError) {
-    return NextResponse.json({ error: error.message }, { status: 403 });
-  }
-  return NextResponse.json(
-    { error: error instanceof Error ? error.message : "L’action de conformité n’a pas abouti." },
-    { status: 500 },
-  );
+  return apiErrorResponse(error, {
+    failureMessage:
+      "L’action de conformité n’a pas été confirmée. Aucune suppression ne doit être supposée.",
+  });
 }
