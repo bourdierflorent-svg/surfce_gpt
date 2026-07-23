@@ -23,7 +23,8 @@ racine. Aucun code métier antérieur n’a donc été supprimé ou remplacé.
 | Phase 4 — Enrichissement et matching | Déployée       | Providers mock, jobs, persona Zod, validation humaine, score explicable et recommandations                  |
 | Phase 5 — Contacts et campagnes mock | Déployée       | Contacts, vérification, séquences, validation, planification, envoi mock et suppression atomique            |
 | Phase 6 — Gmail/Microsoft et inbox   | Déployée       | OAuth, tokens chiffrés, sync, webhooks, fils, qualification, réponses et arrêt automatique                  |
-| Phases 7 à 9                         | Non commencées | Opportunités, tâches, analytics et durcissement restent hors de cette intervention                          |
+| Phase 7 — Opportunités et tâches     | Déployée       | Pipeline configurable, dossiers, tâches, rendez-vous, propositions, revenu pondéré et audit                 |
+| Phases 8 et 9                        | Non commencées | Analytics, conformité et durcissement restent hors de cette intervention                                    |
 
 ## Identité du produit
 
@@ -228,18 +229,50 @@ racine. Aucun code métier antérieur n’a donc été supprimé ou remplacé.
 - Performance Advisor sans clé étrangère non indexée ; seuls les index neufs sans activité sont
   signalés au niveau informationnel.
 
+## Livré en Phase 7
+
+- six nouvelles tables : `opportunity_stages`, `opportunities`, `activities`, `tasks`,
+  `appointments` et `proposals`, plus la relation entre `mail_threads` et l’opportunité source ;
+- onze jalons par défaut, configurables pour chaque organisation, avec probabilité et catégorie ;
+- vingt-deux politiques RLS : lecture par membre, gestion globale par `admin`/`sales_manager` et
+  écriture limitée au propriétaire ou à l’assigné pour `sales` ;
+- trente index couvrant les clés étrangères et les lectures pipeline, échéances et historique ;
+- triggers de probabilité, résolution gagné/perdu, historique des activités et audit avant/après ;
+- RPC idempotente `create_opportunity_from_thread`, interdite à `anon`, qui transforme une réponse
+  positive en opportunité et première tâche dans une transaction ;
+- pipeline horizontal avec glisser-déposer, alternative clavier, confirmation accessible et motif
+  de perte obligatoire ;
+- vue registre, filtres URL, bande de valeur et calcul montant × probabilité ;
+- fiche dossier reliant entreprise, contact, campagne, lieu, offre et conversation source ;
+- tâches avec échéance et statut, rendez-vous qui font progresser le pipeline et propositions
+  versionnées avec statuts envoyé, accepté ou refusé ;
+- cinq opportunités entièrement fictives, cinq tâches, un rendez-vous, deux propositions et deux
+  conversations liées ;
+- direction visuelle « plan de circulation commerciale » produite avec `frontend-design` ;
+- audit selon `web-design-guidelines` et corrections de navigation, focus du dialogue, clavier,
+  formulaires, annonces asynchrones et mouvement réduit ;
+- quatre migrations Phase 7 appliquées au projet Supabase distant ;
+- assertions distantes rollback-only réussies pour l’idempotence, les rôles, le changement de
+  jalon, le revenu pondéré, l’historique et l’audit ;
+- données distantes vérifiées : 11 jalons, 5 opportunités, 5 tâches, 1 rendez-vous, 2 propositions,
+  2 fils liés, 30 445 € pondérés ouverts et 7 600 € gagnés ;
+- Security Advisor : `anon` reste bloqué ; la nouvelle RPC authentifiée est intentionnelle et
+  contrôle le rôle, l’organisation et la conversation ;
+- Performance Advisor sans clé étrangère non indexée ; les index neufs sans activité sont
+  seulement signalés au niveau informationnel.
+
 ## Vérifications
 
 | Commande                         | Résultat actuel                                                                 |
 | -------------------------------- | ------------------------------------------------------------------------------- |
 | `npm run lint`                   | Réussi — 0 erreur, 0 avertissement                                              |
 | `npm run typecheck`              | Réussi                                                                          |
-| `npm test`                       | Réussi — 15 fichiers, 115 tests                                                 |
+| `npm test`                       | Réussi — 17 fichiers, 131 tests                                                 |
 | `npm run format:check`           | Réussi                                                                          |
-| `npm run build`                  | Réussi — routes Inbox, OAuth, webhook et cron générées avec Next.js 16.2.11     |
+| `npm run build`                  | Réussi — routes Phase 7 et précédentes générées avec Next.js 16.2.11            |
 | `npm run test:rls`               | Tenté — échec de connexion à PostgreSQL local, Docker/base locale indisponible  |
 | Assertions RLS distantes         | Réussi — isolation de deux organisations et permissions admin/viewer validées   |
-| Supabase Security Advisor        | `anon` bloqué ; 4 RPC authentifiées intentionnelles et protection Auth à régler |
+| Supabase Security Advisor        | `anon` bloqué ; 5 RPC authentifiées intentionnelles et protection Auth à régler |
 | Auth propriétaire distant        | Réussi — connexion par mot de passe et émission d’un jeton validées             |
 | Assertions RLS Phase 2           | Réussi — isolation, lecture viewer et écriture venue manager validées           |
 | Lecture RLS avec le compte admin | Réussi — 4 établissements visibles                                              |
@@ -256,6 +289,9 @@ racine. Aucun code métier antérieur n’a donc été supprimé ou remplacé.
 | Assertions RLS Phase 6           | Réussi — idempotence, arrêt, rôles et correction manuelle, rollback final       |
 | Schéma distant Phase 6           | Réussi — 2 nouvelles tables RLS et 7 migrations                                 |
 | Données mock Phase 6             | Réussi — 3 réponses, 1 arrêt de campagne et 1 pièce jointe                      |
+| Assertions RLS Phase 7           | Réussi — inbox, idempotence, rôles, jalon, revenu, activité et audit            |
+| Schéma distant Phase 7           | Réussi — 6 nouvelles tables RLS et 4 migrations                                 |
+| Données mock Phase 7             | Réussi — 5 opportunités, 5 tâches, 1 rendez-vous et 2 propositions              |
 
 Les invariants RLS sont aussi contrôlés par Vitest. Les scénarios distants ont été exécutés avec des
 utilisateurs fictifs dans des transactions ensuite annulées. Le test pgTAP local reste disponible
@@ -296,7 +332,7 @@ Variables optionnelles ou réservées aux autres providers :
 
 Les sélecteurs `AI_PROVIDER`, `COMPANY_REGISTRY_PROVIDER`, `CONTACT_VERIFICATION_PROVIDER` et
 `MAIL_PROVIDER` peuvent rester absents : le fallback serveur `mock` est explicite. Le scénario mock
-de la Phase 6 reste utilisable sans appel externe ni coût.
+des Phases 6 et 7 reste utilisable sans appel externe ni coût.
 
 ## Écarts et risques
 
@@ -310,10 +346,10 @@ de la Phase 6 reste utilisable sans appel externe ni coût.
    autorisations Graph et le callback webhook public.
 4. Supabase Auth signale que la protection contre les mots de passe compromis est désactivée. Ce
    réglage doit être activé avant la production depuis les paramètres Auth.
-5. Quatre RPC métier atomiques restent `SECURITY DEFINER` et exécutables par `authenticated` :
-   inscription en campagne, opposition, association et classification d’un fil. Elles bloquent
-   `anon` et vérifient l’organisation et le rôle en interne, mais restent signalées par le Security
-   Advisor.
+5. Cinq RPC métier atomiques restent `SECURITY DEFINER` et exécutables par `authenticated` :
+   inscription en campagne, opposition, association et classification d’un fil, ainsi que création
+   d’une opportunité depuis l’inbox. Elles bloquent `anon` et vérifient l’organisation et le rôle
+   en interne, mais restent signalées par le Security Advisor.
 6. `npm audit` signale trois vulnérabilités connues dans l’arbre de dépendances, dont une modérée et
    deux élevées. Aucun `npm audit fix --force` n’a été appliqué afin d’éviter une mise à niveau
    cassante non revue.
@@ -324,13 +360,11 @@ de la Phase 6 reste utilisable sans appel externe ni coût.
 
 ## Plan des prochaines phases
 
-1. **Phase 7** — opportunités et tâches ;
-2. Phase 8 — dashboard métier, analytics et conformité ;
-3. Phase 9 — durcissement production et E2E.
+1. **Phase 8** — dashboard métier, analytics et conformité ;
+2. Phase 9 — durcissement production et E2E.
 
 ## Prochaine phase
 
-**Phase 7 — Opportunités et tâches.** La prochaine intervention doit ajouter le pipeline, le
-Kanban, les tâches, les rendez-vous, la proposition simple, le revenu pondéré et les automatisations
-depuis l’inbox. Elle commencera par transformer une réponse positive qualifiée en opportunité
-auditable, sans démarrer les analytics de Phase 8.
+**Phase 8 — Dashboard métier, analytics et conformité.** La prochaine intervention doit agréger le
+funnel, les conversions, les délais, la performance commerciale, la provenance et les contrôles de
+conformité à partir des données existantes, sans commencer le durcissement E2E de la Phase 9.

@@ -342,6 +342,7 @@ export interface MailThreadRow extends Record<string, unknown> {
   company_id: string | null;
   contact_id: string | null;
   campaign_id: string | null;
+  opportunity_id: string | null;
   subject: string | null;
   classification: string | null;
   priority: "low" | "normal" | "high";
@@ -435,6 +436,134 @@ export interface MessageAttachmentRow extends Record<string, unknown> {
   created_at: string;
 }
 
+export interface OpportunityStageRow extends Record<string, unknown> {
+  id: string;
+  organization_id: string;
+  key: string;
+  label: string;
+  position: number;
+  default_probability: number;
+  category: "open" | "won" | "lost";
+  color: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OpportunityRow extends Record<string, unknown> {
+  id: string;
+  organization_id: string;
+  company_id: string;
+  primary_contact_id: string | null;
+  venue_id: string | null;
+  offer_id: string | null;
+  campaign_id: string | null;
+  owner_id: string;
+  stage_id: string;
+  title: string;
+  probability: number;
+  estimated_amount: number | null;
+  proposed_amount: number | null;
+  signed_amount: number | null;
+  currency: string;
+  estimated_guests: number | null;
+  event_type: string | null;
+  desired_event_date: string | null;
+  expected_close_date: string | null;
+  source: string;
+  objections: Json;
+  next_action: string | null;
+  next_action_at: string | null;
+  loss_reason: string | null;
+  notes: string | null;
+  last_activity_at: string;
+  won_at: string | null;
+  lost_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ActivityRow extends Record<string, unknown> {
+  id: string;
+  organization_id: string;
+  company_id: string | null;
+  contact_id: string | null;
+  opportunity_id: string | null;
+  user_id: string | null;
+  activity_type:
+    | "opportunity_created"
+    | "stage_changed"
+    | "note"
+    | "task_created"
+    | "task_completed"
+    | "appointment_created"
+    | "proposal_created"
+    | "proposal_status_changed";
+  title: string;
+  description: string | null;
+  occurred_at: string;
+  metadata: Json;
+  created_at: string;
+}
+
+export interface TaskRow extends Record<string, unknown> {
+  id: string;
+  organization_id: string;
+  company_id: string | null;
+  contact_id: string | null;
+  opportunity_id: string | null;
+  assigned_to: string;
+  created_by: string;
+  title: string;
+  description: string | null;
+  priority: "low" | "normal" | "high";
+  status: "todo" | "in_progress" | "completed" | "cancelled";
+  due_at: string | null;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AppointmentRow extends Record<string, unknown> {
+  id: string;
+  organization_id: string;
+  company_id: string | null;
+  contact_id: string | null;
+  opportunity_id: string | null;
+  owner_id: string;
+  title: string;
+  description: string | null;
+  starts_at: string;
+  ends_at: string;
+  location: string | null;
+  external_calendar_id: string | null;
+  status: "planned" | "completed" | "cancelled" | "no_show";
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProposalRow extends Record<string, unknown> {
+  id: string;
+  organization_id: string;
+  opportunity_id: string;
+  venue_id: string | null;
+  offer_id: string | null;
+  version: number;
+  status: "draft" | "sent" | "accepted" | "rejected" | "expired";
+  amount: number;
+  currency: string;
+  guest_count: number | null;
+  event_date: string | null;
+  content: Json;
+  storage_path: string | null;
+  sent_at: string | null;
+  accepted_at: string | null;
+  rejected_at: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface SuppressionRow extends Record<string, unknown> {
   id: string;
   organization_id: string;
@@ -471,6 +600,13 @@ export interface Database {
   };
   public: {
     Tables: {
+      activities: {
+        Row: ActivityRow;
+        Insert: Partial<ActivityRow> &
+          Pick<ActivityRow, "organization_id" | "activity_type" | "title">;
+        Update: Partial<ActivityRow>;
+        Relationships: [];
+      };
       ai_runs: {
         Row: AiRunRow;
         Insert: Partial<AiRunRow> &
@@ -486,6 +622,13 @@ export interface Database {
             | "status"
           >;
         Update: Partial<AiRunRow>;
+        Relationships: [];
+      };
+      appointments: {
+        Row: AppointmentRow;
+        Insert: Partial<AppointmentRow> &
+          Pick<AppointmentRow, "organization_id" | "owner_id" | "title" | "starts_at" | "ends_at">;
+        Update: Partial<AppointmentRow>;
         Relationships: [];
       };
       audit_logs: {
@@ -574,6 +717,26 @@ export interface Database {
           settings?: Json;
           updated_at?: string;
         };
+        Relationships: [];
+      };
+      opportunities: {
+        Row: OpportunityRow;
+        Insert: Partial<OpportunityRow> &
+          Pick<
+            OpportunityRow,
+            "organization_id" | "company_id" | "owner_id" | "stage_id" | "title" | "probability"
+          >;
+        Update: Partial<OpportunityRow>;
+        Relationships: [];
+      };
+      opportunity_stages: {
+        Row: OpportunityStageRow;
+        Insert: Partial<OpportunityStageRow> &
+          Pick<
+            OpportunityStageRow,
+            "organization_id" | "key" | "label" | "position" | "default_probability"
+          >;
+        Update: Partial<OpportunityStageRow>;
         Relationships: [];
       };
       profiles: {
@@ -733,6 +896,16 @@ export interface Database {
         Update: Partial<ProviderJobRow>;
         Relationships: [];
       };
+      proposals: {
+        Row: ProposalRow;
+        Insert: Partial<ProposalRow> &
+          Pick<
+            ProposalRow,
+            "organization_id" | "opportunity_id" | "version" | "amount" | "created_by"
+          >;
+        Update: Partial<ProposalRow>;
+        Relationships: [];
+      };
       sequence_steps: {
         Row: SequenceStepRow;
         Insert: Partial<SequenceStepRow> &
@@ -748,6 +921,13 @@ export interface Database {
             "organization_id" | "email" | "normalized_email" | "reason" | "source"
           >;
         Update: Partial<SuppressionRow>;
+        Relationships: [];
+      };
+      tasks: {
+        Row: TaskRow;
+        Insert: Partial<TaskRow> &
+          Pick<TaskRow, "organization_id" | "assigned_to" | "created_by" | "title">;
+        Update: Partial<TaskRow>;
         Relationships: [];
       };
       venue_assets: {
@@ -1033,6 +1213,18 @@ export interface Database {
       create_organization: {
         Args: { p_name: string; p_slug: string };
         Returns: string;
+      };
+      create_opportunity_from_thread: {
+        Args: {
+          p_thread_id: string;
+          p_title: string;
+          p_event_type?: string | null;
+          p_estimated_guests?: number | null;
+          p_desired_event_date?: string | null;
+          p_next_action?: string | null;
+          p_next_action_at?: string | null;
+        };
+        Returns: Json;
       };
       enroll_contact_in_campaign: {
         Args: { p_campaign_id: string; p_contact_id: string };

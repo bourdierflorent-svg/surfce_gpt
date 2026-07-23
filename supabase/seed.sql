@@ -1709,3 +1709,368 @@ end;
 $$;
 
 select pg_temp.seed_phase6_demo();
+
+-- Phase 7 — pipeline, tâches, rendez-vous et propositions entièrement fictifs.
+create or replace function pg_temp.seed_phase7_demo()
+returns void
+language plpgsql
+as $phase7$
+declare
+  owner_user_id uuid;
+begin
+  select m.user_id
+  into owner_user_id
+  from public.memberships m
+  where m.organization_id = '10000000-0000-0000-0000-000000000001'
+    and m.is_active
+  order by
+    case m.role
+      when 'admin' then 0
+      when 'sales_manager' then 1
+      when 'sales' then 2
+      else 3
+    end,
+    m.created_at
+  limit 1;
+
+  if owner_user_id is null then
+    return;
+  end if;
+
+  insert into public.opportunities (
+    id,
+    organization_id,
+    company_id,
+    primary_contact_id,
+    venue_id,
+    offer_id,
+    campaign_id,
+    owner_id,
+    stage_id,
+    title,
+    probability,
+    estimated_amount,
+    proposed_amount,
+    signed_amount,
+    currency,
+    estimated_guests,
+    event_type,
+    desired_event_date,
+    expected_close_date,
+    source,
+    objections,
+    next_action,
+    next_action_at,
+    notes,
+    last_activity_at,
+    won_at
+  )
+  values
+    (
+      '82000000-0000-0000-0000-000000000001',
+      '10000000-0000-0000-0000-000000000001',
+      '50000000-0000-0000-0000-000000000001',
+      '70000000-0000-0000-0000-000000000001',
+      '30000000-0000-0000-0000-000000000001',
+      '40000000-0000-0000-0000-000000000001',
+      '72000000-0000-0000-0000-000000000001',
+      owner_user_id,
+      (
+        select id from public.opportunity_stages
+        where organization_id = '10000000-0000-0000-0000-000000000001' and key = 'engaged'
+      ),
+      'Afterwork Studio Huit · 45 personnes',
+      45,
+      6800,
+      null,
+      null,
+      'EUR',
+      45,
+      'Afterwork',
+      current_date + 57,
+      current_date + 15,
+      'inbox',
+      '[]'::jsonb,
+      'Qualifier le format et les horaires',
+      now() + interval '1 day',
+      'Donnée fictive issue de la réponse positive de Lina Martin.',
+      now() - interval '2 hours',
+      null
+    ),
+    (
+      '82000000-0000-0000-0000-000000000002',
+      '10000000-0000-0000-0000-000000000001',
+      '50000000-0000-0000-0000-000000000002',
+      '70000000-0000-0000-0000-000000000009',
+      '30000000-0000-0000-0000-000000000004',
+      '40000000-0000-0000-0000-000000000004',
+      null,
+      owner_user_id,
+      (
+        select id from public.opportunity_stages
+        where organization_id = '10000000-0000-0000-0000-000000000001' and key = 'appointment'
+      ),
+      'Séminaire Rive Conseil · direction',
+      60,
+      12400,
+      null,
+      null,
+      'EUR',
+      72,
+      'Séminaire',
+      current_date + 77,
+      current_date + 29,
+      'inbox',
+      '["Accès transports à confirmer"]'::jsonb,
+      'Préparer le rendez-vous découverte',
+      now() - interval '1 hour',
+      'Donnée fictive de démonstration.',
+      now() - interval '1 day',
+      null
+    ),
+    (
+      '82000000-0000-0000-0000-000000000003',
+      '10000000-0000-0000-0000-000000000001',
+      '50000000-0000-0000-0000-000000000001',
+      '70000000-0000-0000-0000-000000000003',
+      '30000000-0000-0000-0000-000000000002',
+      '40000000-0000-0000-0000-000000000002',
+      null,
+      owner_user_id,
+      (
+        select id from public.opportunity_stages
+        where organization_id = '10000000-0000-0000-0000-000000000001' and key = 'proposal_sent'
+      ),
+      'Cocktail presse · lancement produit',
+      70,
+      9800,
+      10400,
+      null,
+      'EUR',
+      90,
+      'Cocktail',
+      current_date + 68,
+      current_date + 8,
+      'manual',
+      '["Budget décoration"]'::jsonb,
+      'Relancer la proposition v2',
+      now() + interval '2 days',
+      'Donnée fictive de démonstration.',
+      now() - interval '1 day',
+      null
+    ),
+    (
+      '82000000-0000-0000-0000-000000000004',
+      '10000000-0000-0000-0000-000000000001',
+      '50000000-0000-0000-0000-000000000002',
+      '70000000-0000-0000-0000-000000000012',
+      '30000000-0000-0000-0000-000000000003',
+      '40000000-0000-0000-0000-000000000003',
+      null,
+      owner_user_id,
+      (
+        select id from public.opportunity_stages
+        where organization_id = '10000000-0000-0000-0000-000000000001' and key = 'negotiation'
+      ),
+      'Dîner partenaires Rive Conseil',
+      85,
+      15600,
+      14900,
+      null,
+      'EUR',
+      38,
+      'Dîner',
+      current_date + 112,
+      current_date + 22,
+      'referral',
+      '["Privatisation totale demandée"]'::jsonb,
+      'Valider la clause d’exclusivité',
+      now() + interval '5 days',
+      'Donnée fictive de démonstration.',
+      now() - interval '3 days',
+      null
+    ),
+    (
+      '82000000-0000-0000-0000-000000000005',
+      '10000000-0000-0000-0000-000000000001',
+      '50000000-0000-0000-0000-000000000001',
+      '70000000-0000-0000-0000-000000000006',
+      '30000000-0000-0000-0000-000000000001',
+      '40000000-0000-0000-0000-000000000001',
+      null,
+      owner_user_id,
+      (
+        select id from public.opportunity_stages
+        where organization_id = '10000000-0000-0000-0000-000000000001' and key = 'won'
+      ),
+      'Soirée partenaires · rentrée',
+      100,
+      7200,
+      7600,
+      7600,
+      'EUR',
+      55,
+      'Soirée',
+      current_date + 42,
+      current_date - 5,
+      'manual',
+      '[]'::jsonb,
+      'Transmettre le dossier de production',
+      now() + interval '4 days',
+      'Donnée fictive gagnée pour démontrer le revenu signé.',
+      now() - interval '5 days',
+      now() - interval '5 days'
+    )
+  on conflict (id) do update
+  set
+    stage_id = excluded.stage_id,
+    title = excluded.title,
+    probability = excluded.probability,
+    estimated_amount = excluded.estimated_amount,
+    proposed_amount = excluded.proposed_amount,
+    signed_amount = excluded.signed_amount,
+    next_action = excluded.next_action,
+    next_action_at = excluded.next_action_at,
+    owner_id = excluded.owner_id,
+    notes = excluded.notes;
+
+  update public.mail_threads
+  set opportunity_id = case id
+    when '75000000-0000-0000-0000-000000000001'
+      then '82000000-0000-0000-0000-000000000001'::uuid
+    when '75000000-0000-0000-0000-000000000002'
+      then '82000000-0000-0000-0000-000000000002'::uuid
+    else opportunity_id
+  end
+  where id in (
+    '75000000-0000-0000-0000-000000000001',
+    '75000000-0000-0000-0000-000000000002'
+  );
+
+  insert into public.tasks (
+    id,
+    organization_id,
+    company_id,
+    contact_id,
+    opportunity_id,
+    assigned_to,
+    created_by,
+    title,
+    description,
+    priority,
+    status,
+    due_at
+  )
+  values
+    ('83000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000001', '70000000-0000-0000-0000-000000000001', '82000000-0000-0000-0000-000000000001', owner_user_id, owner_user_id, 'Qualifier le format et les horaires', 'Préparer trois questions de qualification.', 'normal', 'todo', now() + interval '1 day'),
+    ('83000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000002', '70000000-0000-0000-0000-000000000009', '82000000-0000-0000-0000-000000000002', owner_user_id, owner_user_id, 'Préparer le rendez-vous découverte', 'Valider les participants et le budget.', 'high', 'todo', now() - interval '1 hour'),
+    ('83000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000001', '70000000-0000-0000-0000-000000000003', '82000000-0000-0000-0000-000000000003', owner_user_id, owner_user_id, 'Relancer la proposition v2', null, 'normal', 'todo', now() + interval '2 days'),
+    ('83000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000002', '70000000-0000-0000-0000-000000000012', '82000000-0000-0000-0000-000000000004', owner_user_id, owner_user_id, 'Valider la clause d’exclusivité', null, 'high', 'todo', now() + interval '5 days'),
+    ('83000000-0000-0000-0000-000000000005', '10000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000001', '70000000-0000-0000-0000-000000000006', '82000000-0000-0000-0000-000000000005', owner_user_id, owner_user_id, 'Transmettre le dossier de production', null, 'normal', 'todo', now() + interval '4 days')
+  on conflict (id) do update
+  set
+    title = excluded.title,
+    description = excluded.description,
+    priority = excluded.priority,
+    due_at = excluded.due_at,
+    assigned_to = excluded.assigned_to;
+
+  insert into public.appointments (
+    id,
+    organization_id,
+    company_id,
+    contact_id,
+    opportunity_id,
+    owner_id,
+    title,
+    description,
+    starts_at,
+    ends_at,
+    location,
+    status
+  )
+  values (
+    '85000000-0000-0000-0000-000000000001',
+    '10000000-0000-0000-0000-000000000001',
+    '50000000-0000-0000-0000-000000000002',
+    '70000000-0000-0000-0000-000000000009',
+    '82000000-0000-0000-0000-000000000002',
+    owner_user_id,
+    'Rendez-vous découverte',
+    'Valider le format, la jauge et le budget.',
+    now() + interval '1 day',
+    now() + interval '1 day 45 minutes',
+    'Visioconférence',
+    'planned'
+  )
+  on conflict (id) do update
+  set
+    starts_at = excluded.starts_at,
+    ends_at = excluded.ends_at,
+    location = excluded.location,
+    owner_id = excluded.owner_id;
+
+  insert into public.proposals (
+    id,
+    organization_id,
+    opportunity_id,
+    venue_id,
+    offer_id,
+    version,
+    status,
+    amount,
+    currency,
+    guest_count,
+    event_date,
+    content,
+    sent_at,
+    accepted_at,
+    created_by
+  )
+  values
+    (
+      '86000000-0000-0000-0000-000000000001',
+      '10000000-0000-0000-0000-000000000001',
+      '82000000-0000-0000-0000-000000000003',
+      '30000000-0000-0000-0000-000000000002',
+      '40000000-0000-0000-0000-000000000002',
+      1,
+      'sent',
+      10400,
+      'EUR',
+      90,
+      current_date + 68,
+      '{"summary":"Cocktail presse fictif avec privatisation.","inclusions":["Privatisation","Accueil","Cocktail"],"terms":"Sous réserve de disponibilité."}'::jsonb,
+      now() - interval '1 day',
+      null,
+      owner_user_id
+    ),
+    (
+      '86000000-0000-0000-0000-000000000002',
+      '10000000-0000-0000-0000-000000000001',
+      '82000000-0000-0000-0000-000000000005',
+      '30000000-0000-0000-0000-000000000001',
+      '40000000-0000-0000-0000-000000000001',
+      1,
+      'accepted',
+      7600,
+      'EUR',
+      55,
+      current_date + 42,
+      '{"summary":"Soirée partenaires fictive confirmée.","inclusions":["Privatisation","Cocktail"],"terms":"Démonstration uniquement."}'::jsonb,
+      now() - interval '7 days',
+      now() - interval '5 days',
+      owner_user_id
+    )
+  on conflict (id) do update
+  set
+    status = excluded.status,
+    amount = excluded.amount,
+    content = excluded.content,
+    sent_at = excluded.sent_at,
+    accepted_at = excluded.accepted_at,
+    created_by = excluded.created_by;
+end;
+$phase7$;
+
+select pg_temp.seed_phase7_demo();

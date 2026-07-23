@@ -4,11 +4,11 @@ SURFCE est un outil indépendant de prospection B2B et de CRM événementiel, co
 son propriétaire. Stargazing constitue son premier cas d’usage métier, sans définir la marque ni
 la direction artistique de SURFCE.
 
-Le dépôt couvre actuellement les **Phases 0 à 6** du cahier des charges : socle Next.js,
+Le dépôt couvre actuellement les **Phases 0 à 7** du cahier des charges : socle Next.js,
 authentification Supabase SSR, organisations et rôles, registre des établissements, Explorer,
-entreprises, enrichissement mock, personas, matching, contacts, campagnes et inbox connectable.
-Google Workspace et Microsoft 365 restent fermés tant que leurs secrets OAuth ne sont pas
-configurés.
+entreprises, enrichissement mock, personas, matching, contacts, campagnes, inbox connectable et
+pipeline d’opportunités. Google Workspace et Microsoft 365 restent fermés tant que leurs secrets
+OAuth ne sont pas configurés.
 
 ## Prérequis
 
@@ -36,7 +36,7 @@ Ouvrir ensuite `http://localhost:3000/login`.
 
 ## Variables d’environnement
 
-### Configuration publique des Phases 1 à 6
+### Configuration publique des Phases 1 à 7
 
 | Variable                        | Exposition | Usage                               |
 | ------------------------------- | ---------- | ----------------------------------- |
@@ -118,6 +118,10 @@ Routes actuellement disponibles :
 - `/campaigns/[campaignId]/edit` ;
 - `/inbox` ;
 - `/inbox/[threadId]` ;
+- `/opportunities` ;
+- `/opportunities/new` ;
+- `/opportunities/[opportunityId]` ;
+- `/opportunities/stages` ;
 - `/settings/mailboxes` ;
 - `/api/discovery/search`, `/import`, `/import-batch`, `/deduplicate` et `/saved` ;
 - `/api/companies/[id]/enrich`, `/verify`, `/persona` et `/match-venues`.
@@ -128,6 +132,10 @@ Routes actuellement disponibles :
 - `/api/mailboxes/[provider]/connect`, `/api/oauth/[provider]/callback`, synchronisation et
   déconnexion ;
 - `/api/threads/[id]/summarize`, `/draft-reply`, `/reply`, `/associate` et `/read` ;
+- `/api/threads/[id]/opportunity` ;
+- `/api/opportunities`, puis `/api/opportunities/[id]`, `/stage`, `/tasks`, `/appointments` et
+  `/proposals` ;
+- `/api/tasks/[id]/status`, `/api/proposals/[id]/status` et `/api/opportunity-stages/[id]` ;
 - `/api/messages/[id]/classify` ;
 - `/api/webhooks/google/mail`, `/microsoft/mail` et `/provider/[provider]` ;
 - `/api/cron/process-campaigns`, `/sync-mailboxes` et `/refresh-mail-watches`, fermées tant que
@@ -226,6 +234,23 @@ Les callbacks de production sont :
 
 Le parcours mock et les trois réponses fictives du seed restent disponibles sans secret externe.
 
+## Opportunités et tâches
+
+La Phase 7 livre :
+
+- onze jalons configurables par organisation, de la cible détectée au dossier gagné ou perdu ;
+- un pipeline horizontal et une vue registre, filtrables par commercial, étape et recherche ;
+- le déplacement par glisser-déposer avec alternative clavier et motif obligatoire en cas de perte ;
+- une fiche d’opportunité reliant entreprise, contact, établissement, offre, campagne et
+  conversation source ;
+- les montants estimé, proposé et signé, la probabilité et le revenu pondéré ;
+- les tâches, rendez-vous et propositions versionnées avec historique automatique ;
+- la création idempotente d’une opportunité depuis une réponse entrante qualifiée positive ;
+- des permissions RLS multi-tenant et un audit avant/après des mutations métier.
+
+Le seed ajoute cinq dossiers entièrement fictifs. Le pipeline de démonstration contient 30 445 €
+pondérés en cours et 7 600 € gagnés.
+
 ## Qualité et tests
 
 ```powershell
@@ -244,7 +269,8 @@ npm run test:rls
 Les scénarios vérifient notamment l’isolation entre organisations, les matrices de rôles des lieux,
 entreprises, contacts et campagnes, l’import idempotent, la géométrie rayon/polygone, les jobs, le
 persona Zod, le scoring explicable, la suppression, l’absence de double envoi, le chiffrement
-OAuth, l’assainissement HTML et l’arrêt d’une campagne sur réponse.
+OAuth, l’assainissement HTML, l’arrêt d’une campagne sur réponse, le calcul du revenu pondéré et
+l’automatisation inbox → opportunité.
 
 ## Déploiement Vercel
 

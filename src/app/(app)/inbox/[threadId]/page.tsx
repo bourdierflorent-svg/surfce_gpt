@@ -8,7 +8,6 @@ import {
   FileText,
   Link2,
   Mail,
-  ShieldCheck,
   Sparkles,
 } from "lucide-react";
 import Link from "next/link";
@@ -25,6 +24,7 @@ import { ThreadIntelligenceActions } from "@/features/inbox/components/thread-in
 import { suggestedReplyOutputSchema, threadSummaryOutputSchema } from "@/features/inbox/schemas";
 import { getInboxThread } from "@/features/inbox/server/queries";
 import { asRecord } from "@/features/inbox/types";
+import { ThreadOpportunityForm } from "@/features/opportunities/components/thread-opportunity-form";
 import { can } from "@/lib/permissions/roles";
 import type { Json, MessageRow } from "@/types/database";
 
@@ -66,6 +66,12 @@ export default async function InboxThreadPage({ params }: InboxThreadPageProps) 
   const parsedClassification = inboundClassificationSchema.safeParse(detail.thread.classification);
   const classification = parsedClassification.success ? parsedClassification.data : "unknown";
   const campaignStopped = detail.events.some((event) => event.event_type === "campaign_stopped");
+  const commercialSignal = [
+    "interested",
+    "asks_information",
+    "asks_price",
+    "asks_callback",
+  ].includes(classification);
   const responseLine = [
     {
       label: "Entrée",
@@ -409,20 +415,33 @@ export default async function InboxThreadPage({ params }: InboxThreadPageProps) 
             </div>
           </div>
 
-          <div className="rounded-xl border border-dashed border-border bg-muted/25 p-5">
-            <p className="font-data text-[0.65rem] uppercase tracking-[0.14em] text-muted-foreground">
-              Phase 7
-            </p>
-            <div className="mt-4 space-y-3 text-sm text-muted-foreground">
-              <p className="flex items-center gap-2">
-                <CalendarClock className="size-4" aria-hidden="true" />
-                Créer une tâche · bientôt
-              </p>
-              <p className="flex items-center gap-2">
-                <ShieldCheck className="size-4" aria-hidden="true" />
-                Ouvrir une opportunité · bientôt
+          <div className="rounded-xl border border-border bg-card p-5">
+            <div className="flex items-center gap-2">
+              <CalendarClock className="size-4 text-primary" aria-hidden="true" />
+              <p className="font-data text-[0.65rem] uppercase tracking-[0.14em] text-muted-foreground">
+                Continuité commerciale
               </p>
             </div>
+            {commercialSignal && detail.thread.company_id ? (
+              <div className="mt-4">
+                <ThreadOpportunityForm
+                  threadId={detail.thread.id}
+                  defaultTitle={`${summary?.need ?? detail.thread.subject ?? "Projet événementiel"} · ${
+                    detail.company?.trade_name ?? detail.company?.legal_name ?? "Entreprise"
+                  }`}
+                  defaultEventType={summary?.need}
+                  defaultGuests={summary?.participantCount}
+                  defaultDate={summary?.date}
+                  existingOpportunityId={detail.thread.opportunity_id}
+                  disabled={!writable}
+                />
+              </div>
+            ) : (
+              <p className="mt-4 text-sm leading-6 text-muted-foreground">
+                Associez une entreprise et confirmez un signal commercial positif pour ouvrir une
+                opportunité.
+              </p>
+            )}
           </div>
         </aside>
       </section>

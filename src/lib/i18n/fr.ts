@@ -82,10 +82,10 @@ export const fr = {
     },
     values: {
       serverAndDatabase: "Serveur + base",
-      protectedTables: "25 tables métier",
+      protectedTables: "31 tables métier",
     },
     scopeTitle: "Périmètre livré",
-    scopeDescription: "Les Phases 0 à 6 sont maintenant livrées.",
+    scopeDescription: "Les Phases 0 à 7 sont maintenant livrées.",
     scopeItems: [
       "Authentification, organisations et rôles",
       "Isolation multi-tenant par Row Level Security",
@@ -101,10 +101,13 @@ export const fr = {
       "OAuth Gmail et Microsoft avec tokens chiffrés",
       "Inbox unifiée, qualification et arrêt automatique des relances",
       "Résumé structuré et réponse dans le fil du provider",
+      "Pipeline configurable, tâches et rendez-vous",
+      "Propositions versionnées et revenu pondéré",
+      "Réponse positive transformable en opportunité auditée",
     ],
     nextTitle: "Prochaine étape",
     nextDescription:
-      "La Phase 7 transformera les réponses qualifiées en opportunités et tâches, sans commencer avant la prochaine intervention.",
+      "La Phase 8 ajoutera les KPI, les filtres, les exports, la rétention et le suivi de conformité.",
   },
   settings: {
     eyebrow: "Paramètres",

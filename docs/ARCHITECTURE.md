@@ -1,4 +1,4 @@
-# Architecture SURFCE — Phases 0 à 6
+# Architecture SURFCE — Phases 0 à 7
 
 ## Principes
 
@@ -29,6 +29,7 @@ src/features/campaigns/          Séquences, approbation et planification
 src/features/messages/           Génération, test et traitement mock
 src/features/mailboxes/          OAuth, chiffrement, synchronisation et watches
 src/features/inbox/              Conversations, classification, résumé et réponse
+src/features/opportunities/      Pipeline, tâches, rendez-vous, propositions et automatisations
 src/providers/places/            Contrat provider et implémentation mock
 src/providers/registries/        Contrat registre et implémentation mock
 src/providers/enrichment/        Contrat analyse website et implémentation mock
@@ -92,6 +93,8 @@ et `viewer`.
 - `sales` agit uniquement sur les contacts, entreprises, boîtes et campagnes qui lui sont
   attribués ou qu’il a créés ;
 - `marketing` peut préparer les campagnes mais ne contourne jamais les contrôles d’opposition ;
+- `admin` et `sales_manager` gèrent tout le pipeline ; `sales` gère les dossiers qui lui sont
+  attribués ainsi que leurs tâches, rendez-vous et propositions ;
 - les autres rôles peuvent les consulter sans écrire.
 
 La navigation filtre les entrées non pertinentes au rôle. Les routes futures restent visibles mais
@@ -100,7 +103,7 @@ inachevée.
 
 ## RLS
 
-Les vingt-cinq tables des Phases 1 à 6 ont RLS activée. Les fonctions privées `is_org_member`,
+Les trente et une tables des Phases 1 à 7 ont RLS activée. Les fonctions privées `is_org_member`,
 `has_org_role` et `shares_org_with` utilisent `security definer` et un `search_path` vide pour
 éviter la récursion des politiques et le détournement de résolution de noms. Elles vivent dans le
 schéma non exposé `private` ; seuls des wrappers `security invoker` contrôlés sont publiés.
@@ -305,6 +308,32 @@ ne conserve que les métadonnées contrôlées ; aucun téléchargement distant 
 L’expédition de campagne utilise désormais `claim_campaign_message`, l’appel provider puis
 `finalize_campaign_message`. Le cron ne dépend plus d’une session navigateur.
 
+## Modèle et flux Phase 7
+
+`opportunity_stages` définit onze jalons configurables par organisation avec position, probabilité
+par défaut et catégorie ouverte, gagnée ou perdue. `opportunities` relie le dossier à l’entreprise,
+au contact, au lieu, à l’offre, à la campagne et au commercial tout en conservant les trois niveaux
+de valeur, les objections et l’action suivante.
+
+`activities` forme un historique append-only. `tasks`, `appointments` et `proposals` portent
+respectivement le suivi opérationnel, les rendez-vous et les versions chiffrées de la proposition.
+Une conversation peut référencer l’opportunité dont elle est la source.
+
+1. une réponse `interested`, `asks_information`, `asks_price` ou `asks_callback` peut appeler
+   `create_opportunity_from_thread` ;
+2. la RPC verrouille le fil, vérifie l’organisation et le rôle, puis crée une seule opportunité et
+   sa première tâche ;
+3. chaque changement de jalon recalcule la probabilité, les dates gagnée/perdue et l’activité ;
+4. un rendez-vous avance le dossier jusqu’au jalon rendez-vous s’il était en amont ;
+5. une proposition envoyée, acceptée ou refusée fait progresser le dossier et actualise sa valeur ;
+6. les triggers inscrivent l’historique et l’audit avant/après, indépendamment de l’interface ;
+7. le revenu pondéré utilise le montant signé, proposé ou estimé, dans cet ordre, multiplié par la
+   probabilité pour les seuls dossiers ouverts.
+
+Les écritures passent par le client Supabase authentifié et restent soumises aux politiques RLS.
+La RPC inbox est `SECURITY DEFINER` pour garantir l’atomicité, révoquée à `anon` et protégée par les
+contrôles de conversation et de rôle internes.
+
 ## Design system et direction Phases 2 et 3
 
 Le thème lumineux utilise des tokens CSS sémantiques : fond, carte, premier plan, primaire, muted,
@@ -341,12 +370,17 @@ La Phase 6 adopte la « table de correspondance » : liste compacte, fil central
 de signaux. Sa ligne de réponse relie entrée, classification, arrêt de séquence et action suivante
 sans imiter Gmail ou Outlook.
 
+La Phase 7 adopte le « plan de circulation commerciale » : les jalons sont des postes de passage,
+les opportunités des dossiers en mouvement et la bande montant × probabilité × action suivante
+constitue la signature visuelle. La vue évite les cartes Kanban génériques et conserve une
+alternative clavier pour chaque déplacement.
+
 ## Décisions différées
 
 - implémentations réelles SIRENE, website, Hunter, Dropcontact et OpenAI : après configuration et
   validation de leurs conditions d’usage ;
 - providers réels Places, SIRENE, Hunter, Dropcontact et OpenAI : après validation de leurs coûts
   et conditions d’usage ;
-- opportunités et tâches issues des réponses qualifiées : Phase 7 ;
+- dashboard métier, analytics et conformité : Phase 8 ;
 - activation des crons de production : après ajout de `CRON_SECRET` et
   `SUPABASE_SERVICE_ROLE_KEY` dans Vercel.

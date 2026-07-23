@@ -14,6 +14,9 @@ export type Permission =
   | "mailboxes:write"
   | "inbox:read"
   | "inbox:write"
+  | "opportunities:read"
+  | "opportunities:write"
+  | "tasks:write"
   | "messages:send"
   | "compliance:write"
   | "intelligence:run"
@@ -50,6 +53,9 @@ const permissionsByRole: Record<AppRole, readonly Permission[]> = {
     "mailboxes:write",
     "inbox:read",
     "inbox:write",
+    "opportunities:read",
+    "opportunities:write",
+    "tasks:write",
     "messages:send",
     "compliance:write",
     "intelligence:run",
@@ -64,6 +70,7 @@ const permissionsByRole: Record<AppRole, readonly Permission[]> = {
     "contacts:read",
     "campaigns:read",
     "inbox:read",
+    "opportunities:read",
     "venues:read",
   ],
   sales_manager: [
@@ -78,6 +85,9 @@ const permissionsByRole: Record<AppRole, readonly Permission[]> = {
     "mailboxes:write",
     "inbox:read",
     "inbox:write",
+    "opportunities:read",
+    "opportunities:write",
+    "tasks:write",
     "messages:send",
     "compliance:write",
     "intelligence:run",
@@ -95,6 +105,9 @@ const permissionsByRole: Record<AppRole, readonly Permission[]> = {
     "mailboxes:write",
     "inbox:read",
     "inbox:write",
+    "opportunities:read",
+    "opportunities:write",
+    "tasks:write",
     "messages:send",
     "compliance:write",
     "intelligence:run",
@@ -107,6 +120,7 @@ const permissionsByRole: Record<AppRole, readonly Permission[]> = {
     "contacts:read",
     "campaigns:read",
     "inbox:read",
+    "opportunities:read",
     "venues:read",
     "venues:write",
     "venue-assets:write",
@@ -120,6 +134,7 @@ const permissionsByRole: Record<AppRole, readonly Permission[]> = {
     "campaigns:write",
     "mailboxes:write",
     "inbox:read",
+    "opportunities:read",
     "messages:send",
     "venues:read",
     "venues:write",
@@ -132,6 +147,7 @@ const permissionsByRole: Record<AppRole, readonly Permission[]> = {
     "contacts:read",
     "campaigns:read",
     "inbox:read",
+    "opportunities:read",
     "venues:read",
   ],
 };
