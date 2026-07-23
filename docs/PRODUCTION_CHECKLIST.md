@@ -16,7 +16,9 @@ Supabase Auth ou les consoles providers.
 - [x] 37 tables publiques avec RLS activée ;
 - [x] assertions SQL Phase 9 exécutées dans une transaction annulée ;
 - [x] aucune alerte Performance Advisor au-dessus du niveau informationnel ;
-- [x] aucun nouveau warning Security Advisor introduit par les quotas.
+- [x] aucun nouveau warning Security Advisor introduit par les quotas ;
+- [x] workflow GitHub `Quality` vert sur le commit Phase 9 ;
+- [x] commit Phase 9 servi par Vercel avec liveness 200 et en-têtes de sécurité actifs.
 
 ## Variables Vercel — obligatoires pour le runtime complet
 
@@ -101,6 +103,6 @@ appliqué. Avant le go-live :
 
 ## Go / no-go
 
-Le code Phase 9 et le schéma sont prêts à être déployés. Le go-live fonctionnel reste **no-go** tant
-que les variables runtime obligatoires, la protection Auth contre les mots de passe compromis et
-la revue des avis npm ne sont pas clôturées.
+Le code Phase 9 et le schéma sont déployés. Le go-live fonctionnel reste **no-go** tant que les
+variables runtime obligatoires, la protection Auth contre les mots de passe compromis et la revue
+des avis npm ne sont pas clôturées.

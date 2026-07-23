@@ -25,7 +25,7 @@ racine. Aucun code métier antérieur n’a donc été supprimé ou remplacé.
 | Phase 6 — Gmail/Microsoft et inbox   | Déployée    | OAuth, tokens chiffrés, sync, webhooks, fils, qualification, réponses et arrêt automatique                  |
 | Phase 7 — Opportunités et tâches     | Déployée    | Pipeline configurable, dossiers, tâches, rendez-vous, propositions, revenu pondéré et audit                 |
 | Phase 8 — Analytics et conformité    | Déployée    | 17 KPI sourcés, filtres, exports audités, rétention, droits des personnes et journal d’audit                |
-| Phase 9 — Durcissement production    | Implémentée | Sécurité HTTP, quotas, logs structurés, performances, erreurs, CI, E2E et runbooks                          |
+| Phase 9 — Durcissement production    | Déployée    | Sécurité HTTP, quotas, logs structurés, performances, erreurs, CI, E2E et runbooks                          |
 
 ## Identité du produit
 
@@ -390,7 +390,9 @@ racine. Aucun code métier antérieur n’a donc été supprimé ou remplacé.
 | Données mock Phase 8             | Réussi — 1 politique, 1 export, 1 simulation et 1 demande d’accès               |
 | Assertions RLS Phase 9           | Réussi — quotas, jobs, rôles, isolation et privilèges, rollback final           |
 | Schéma distant Phase 9           | Réussi — 2 tables RLS, 2 migrations, 9 quotas et 0 warning performance          |
-| GitHub Actions                   | Configuré — gate qualité, audit critique et E2E Chromium                        |
+| GitHub Actions                   | Réussi — workflow `Quality` du commit Phase 9 entièrement vert                  |
+| Production Vercel                | Déployée — liveness 200 sur le commit `583f75997fb0`, en-têtes sécurité actifs  |
+| Readiness Vercel                 | 503 attendu — configuration runtime obligatoire encore absente                  |
 
 Les invariants RLS sont aussi contrôlés par Vitest. Les scénarios distants ont été exécutés avec des
 utilisateurs fictifs dans des transactions ensuite annulées. Le test pgTAP local reste disponible
