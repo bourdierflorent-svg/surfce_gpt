@@ -11,6 +11,9 @@ export type Permission =
   | "contacts:write"
   | "campaigns:read"
   | "campaigns:write"
+  | "mailboxes:write"
+  | "inbox:read"
+  | "inbox:write"
   | "messages:send"
   | "compliance:write"
   | "intelligence:run"
@@ -44,6 +47,9 @@ const permissionsByRole: Record<AppRole, readonly Permission[]> = {
     "contacts:write",
     "campaigns:read",
     "campaigns:write",
+    "mailboxes:write",
+    "inbox:read",
+    "inbox:write",
     "messages:send",
     "compliance:write",
     "intelligence:run",
@@ -57,6 +63,7 @@ const permissionsByRole: Record<AppRole, readonly Permission[]> = {
     "companies:read",
     "contacts:read",
     "campaigns:read",
+    "inbox:read",
     "venues:read",
   ],
   sales_manager: [
@@ -68,6 +75,9 @@ const permissionsByRole: Record<AppRole, readonly Permission[]> = {
     "contacts:write",
     "campaigns:read",
     "campaigns:write",
+    "mailboxes:write",
+    "inbox:read",
+    "inbox:write",
     "messages:send",
     "compliance:write",
     "intelligence:run",
@@ -82,6 +92,9 @@ const permissionsByRole: Record<AppRole, readonly Permission[]> = {
     "contacts:write",
     "campaigns:read",
     "campaigns:write",
+    "mailboxes:write",
+    "inbox:read",
+    "inbox:write",
     "messages:send",
     "compliance:write",
     "intelligence:run",
@@ -93,6 +106,7 @@ const permissionsByRole: Record<AppRole, readonly Permission[]> = {
     "companies:read",
     "contacts:read",
     "campaigns:read",
+    "inbox:read",
     "venues:read",
     "venues:write",
     "venue-assets:write",
@@ -104,6 +118,8 @@ const permissionsByRole: Record<AppRole, readonly Permission[]> = {
     "contacts:read",
     "campaigns:read",
     "campaigns:write",
+    "mailboxes:write",
+    "inbox:read",
     "messages:send",
     "venues:read",
     "venues:write",
@@ -115,6 +131,7 @@ const permissionsByRole: Record<AppRole, readonly Permission[]> = {
     "companies:read",
     "contacts:read",
     "campaigns:read",
+    "inbox:read",
     "venues:read",
   ],
 };
@@ -145,7 +162,7 @@ export const navigationPolicies: readonly NavigationPolicy[] = [
     key: "settings",
     href: "/settings/organization",
     availableFromPhase: 1,
-    allowedRoles: ["admin", "direction", "sales_manager"],
+    allowedRoles: ["admin", "direction", "sales_manager", "sales", "marketing"],
   },
 ];
 

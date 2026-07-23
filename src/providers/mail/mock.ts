@@ -34,7 +34,8 @@ export class MockMailProvider implements MailProvider {
     return {
       provider: this.name,
       providerMessageId: stableId("mock_message", input.idempotencyKey),
-      providerThreadId: stableId("mock_thread", `${input.to[0]?.email}:${input.subject}`),
+      providerThreadId:
+        input.providerThreadId ?? stableId("mock_thread", `${input.to[0]?.email}:${input.subject}`),
       sentAt: new Date().toISOString(),
       mock: true,
       test: input.test ?? false,
@@ -50,7 +51,7 @@ export class MockMailProvider implements MailProvider {
   }
 
   async watch(): Promise<WatchResult> {
-    return { active: false, expiresAt: null };
+    return { active: false, expiresAt: null, resourceId: null, cursor: null };
   }
 
   async stopWatch(): Promise<void> {}

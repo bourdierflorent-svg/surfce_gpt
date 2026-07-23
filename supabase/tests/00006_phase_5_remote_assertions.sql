@@ -79,14 +79,13 @@ values
   ('76000000-0000-0000-0000-000000000901', '10000000-0000-0000-0000-000000000901', '72000000-0000-0000-0000-000000000901', '74000000-0000-0000-0000-000000000901', '73000000-0000-0000-0000-000000000901', 'phase5-allowed-once', 'Message autorisé', 'Corps test', '<p>Corps test</p>', now() - interval '1 minute', 'scheduled', '00000000-0000-0000-0000-000000000901', now()),
   ('76000000-0000-0000-0000-000000000902', '10000000-0000-0000-0000-000000000901', '72000000-0000-0000-0000-000000000901', '74000000-0000-0000-0000-000000000902', '73000000-0000-0000-0000-000000000901', 'phase5-suppressed', 'Message bloqué', 'Corps test', '<p>Corps test</p>', now() - interval '1 minute', 'scheduled', '00000000-0000-0000-0000-000000000901', now());
 
-set local role authenticated;
-select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000901', true);
+set local role service_role;
+select set_config('request.jwt.claim.role', 'service_role', true);
 
 do $$
 declare
   result jsonb;
   sent_rows bigint;
-  stopped_rows bigint;
 begin
   select public.process_mock_campaign_message(
     '76000000-0000-0000-0000-000000000901',
@@ -112,7 +111,18 @@ begin
   if sent_rows <> 1 then
     raise exception 'Phase 5 sent message was not unique';
   end if;
+end;
+$$;
 
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claim.role', 'authenticated', true);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000901', true);
+
+do $$
+declare
+  stopped_rows bigint;
+begin
   perform public.suppress_contact(
     '70000000-0000-0000-0000-000000000902',
     'Opposition test',

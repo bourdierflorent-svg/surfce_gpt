@@ -235,12 +235,18 @@ export interface MailboxRow extends Record<string, unknown> {
   encrypted_access_token: string | null;
   encrypted_refresh_token: string | null;
   token_expires_at: string | null;
+  oauth_scopes: string[];
+  provider_metadata: Json;
   sync_cursor: string | null;
   watch_expires_at: string | null;
+  watch_resource_id: string | null;
   status: "connected" | "disconnected" | "error";
   daily_send_limit: number;
   sent_today: number;
   last_sync_at: string | null;
+  last_error_code: string | null;
+  last_error_at: string | null;
+  sync_failure_count: number;
   created_at: string;
   updated_at: string;
 }
@@ -340,6 +346,11 @@ export interface MailThreadRow extends Record<string, unknown> {
   classification: string | null;
   priority: "low" | "normal" | "high";
   summary: string | null;
+  summary_data: Json;
+  summary_generated_at: string | null;
+  summary_prompt_version: string | null;
+  suggested_reply: Json;
+  suggested_reply_generated_at: string | null;
   last_message_at: string | null;
   last_inbound_at: string | null;
   is_unread: boolean;
@@ -355,12 +366,15 @@ export interface MessageRow extends Record<string, unknown> {
   enrollment_id: string | null;
   sequence_step_id: string | null;
   provider_message_id: string | null;
+  internet_message_id: string | null;
+  in_reply_to: string | null;
   deduplication_key: string;
   direction: "outbound" | "inbound";
   sender: Json;
   recipients: Json;
   cc: Json;
   bcc: Json;
+  reply_to: Json;
   subject: string;
   body_text: string;
   body_html: string;
@@ -376,7 +390,11 @@ export interface MessageRow extends Record<string, unknown> {
     | "approved"
     | "scheduled"
     | "processing"
+    | "sent"
     | "sent_mock"
+    | "received"
+    | "delivered"
+    | "bounced"
     | "failed"
     | "cancelled";
   approved_by: string | null;
@@ -386,8 +404,35 @@ export interface MessageRow extends Record<string, unknown> {
   classification: string | null;
   ai_summary: Json;
   headers: Json;
+  has_attachments: boolean;
+  provider_metadata: Json;
   created_at: string;
   updated_at: string;
+}
+
+export interface MessageEventRow extends Record<string, unknown> {
+  id: string;
+  organization_id: string;
+  message_id: string;
+  event_type: string;
+  occurred_at: string;
+  provider_event_id: string | null;
+  metadata: Json;
+  created_at: string;
+}
+
+export interface MessageAttachmentRow extends Record<string, unknown> {
+  id: string;
+  organization_id: string;
+  message_id: string;
+  provider_attachment_id: string;
+  file_name: string;
+  content_type: string;
+  size_bytes: number;
+  content_id: string | null;
+  is_inline: boolean;
+  storage_path: string | null;
+  created_at: string;
 }
 
 export interface SuppressionRow extends Record<string, unknown> {
@@ -585,6 +630,27 @@ export interface Database {
             | "display_name"
           >;
         Update: Partial<MailboxRow>;
+        Relationships: [];
+      };
+      message_attachments: {
+        Row: MessageAttachmentRow;
+        Insert: Partial<MessageAttachmentRow> &
+          Pick<
+            MessageAttachmentRow,
+            | "organization_id"
+            | "message_id"
+            | "provider_attachment_id"
+            | "file_name"
+            | "content_type"
+          >;
+        Update: Partial<MessageAttachmentRow>;
+        Relationships: [];
+      };
+      message_events: {
+        Row: MessageEventRow;
+        Insert: Partial<MessageEventRow> &
+          Pick<MessageEventRow, "organization_id" | "message_id" | "event_type">;
+        Update: Partial<MessageEventRow>;
         Relationships: [];
       };
       messages: {
@@ -972,9 +1038,72 @@ export interface Database {
         Args: { p_campaign_id: string; p_contact_id: string };
         Returns: Json;
       };
+      associate_mail_thread: {
+        Args: {
+          p_thread_id: string;
+          p_company_id?: string | null;
+          p_contact_id?: string | null;
+          p_campaign_id?: string | null;
+        };
+        Returns: Json;
+      };
+      claim_campaign_message: {
+        Args: { p_message_id: string };
+        Returns: Json;
+      };
+      classify_inbound_message: {
+        Args: {
+          p_message_id: string;
+          p_classification: string;
+          p_priority?: string;
+        };
+        Returns: Json;
+      };
       import_discovered_company: {
         Args: { p_organization_id: string; p_company: Json };
         Returns: { company_id: string; was_created: boolean; match_reason: string }[];
+      };
+      fail_campaign_message: {
+        Args: {
+          p_message_id: string;
+          p_error_code: string;
+          p_error_message: string;
+        };
+        Returns: Json;
+      };
+      finalize_campaign_message: {
+        Args: {
+          p_message_id: string;
+          p_provider_message_id: string;
+          p_provider_thread_id: string;
+          p_sent_at: string;
+          p_mock?: boolean;
+        };
+        Returns: Json;
+      };
+      ingest_provider_message: {
+        Args: {
+          p_mailbox_id: string;
+          p_provider_thread_id: string;
+          p_provider_message_id: string;
+          p_internet_message_id?: string | null;
+          p_in_reply_to?: string | null;
+          p_direction: string;
+          p_sender: Json;
+          p_recipients?: Json;
+          p_cc?: Json;
+          p_bcc?: Json;
+          p_reply_to?: Json;
+          p_subject?: string;
+          p_body_text?: string;
+          p_body_html?: string;
+          p_sent_at?: string | null;
+          p_received_at?: string | null;
+          p_headers?: Json;
+          p_classification?: string;
+          p_has_attachments?: boolean;
+        };
+        Returns: Json;
       };
       process_mock_campaign_message: {
         Args: { p_message_id: string; p_provider_message_id: string };

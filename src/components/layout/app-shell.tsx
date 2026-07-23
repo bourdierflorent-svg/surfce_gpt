@@ -30,7 +30,7 @@ export function AppShell({ authContext, children }: AppShellProps) {
           <SurfceLogo />
           {isPreview ? <Badge>{fr.shell.previewMode}</Badge> : null}
         </div>
-        <NavLinks currentPhase={5} role={membership.role} />
+        <NavLinks currentPhase={6} role={membership.role} />
         <div className="mt-7 hidden rounded-lg border border-border bg-background p-3 lg:block">
           <p className="truncate text-sm font-semibold">{organization.name}</p>
           <p className="mt-1 text-xs text-muted-foreground">{fr.roles[membership.role]}</p>

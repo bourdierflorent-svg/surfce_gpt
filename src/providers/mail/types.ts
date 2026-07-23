@@ -12,6 +12,50 @@ export interface MailboxConnection {
   mock: boolean;
 }
 
+export type MailProviderName = "mock" | "google" | "microsoft";
+
+export interface OAuthTokenSet {
+  accessToken: string;
+  refreshToken: string | null;
+  expiresAt: string;
+  scopes: string[];
+}
+
+export interface MailAddress {
+  email: string;
+  name?: string;
+}
+
+export interface ProviderAttachment {
+  providerAttachmentId: string;
+  fileName: string;
+  contentType: string;
+  size: number;
+  isInline: boolean;
+  contentId: string | null;
+}
+
+export interface NormalizedMailMessage {
+  providerMessageId: string;
+  providerThreadId: string;
+  internetMessageId: string | null;
+  inReplyTo: string | null;
+  direction: "inbound" | "outbound";
+  sender: MailAddress;
+  recipients: MailAddress[];
+  cc: MailAddress[];
+  bcc: MailAddress[];
+  replyTo: MailAddress[];
+  subject: string;
+  bodyText: string;
+  bodyHtml: string;
+  sentAt: string | null;
+  receivedAt: string | null;
+  hasAttachments: boolean;
+  attachments: ProviderAttachment[];
+  headers: Record<string, string>;
+}
+
 export interface SendMessageInput {
   messageId: string;
   from: { email: string; name: string };
@@ -20,6 +64,10 @@ export interface SendMessageInput {
   bodyText: string;
   bodyHtml: string;
   idempotencyKey: string;
+  providerThreadId?: string;
+  replyToProviderMessageId?: string;
+  inReplyTo?: string;
+  references?: string[];
   test?: boolean;
 }
 
@@ -34,12 +82,12 @@ export interface SentMessage {
 
 export interface MailThread {
   providerThreadId: string;
-  messages: SentMessage[];
+  messages: NormalizedMailMessage[];
 }
 
 export interface MailChangePage {
   cursor: string | null;
-  changes: [];
+  changes: NormalizedMailMessage[];
 }
 
 export interface WatchMailboxInput {
@@ -49,6 +97,8 @@ export interface WatchMailboxInput {
 export interface WatchResult {
   active: boolean;
   expiresAt: string | null;
+  resourceId: string | null;
+  cursor: string | null;
 }
 
 export interface MailProvider {

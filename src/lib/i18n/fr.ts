@@ -67,7 +67,7 @@ export const fr = {
     eyebrow: "Vue d’ensemble",
     title: "Bonjour",
     description:
-      "L’Explorer, l’intelligence commerciale et le bureau d’expédition mock sont opérationnels.",
+      "L’Explorer, les campagnes et la boîte de correspondance connectée sont opérationnels.",
     cards: {
       organizations: "Organisation active",
       members: "Membres accessibles",
@@ -82,10 +82,10 @@ export const fr = {
     },
     values: {
       serverAndDatabase: "Serveur + base",
-      protectedTables: "23 tables métier",
+      protectedTables: "25 tables métier",
     },
     scopeTitle: "Périmètre livré",
-    scopeDescription: "Les Phases 0 à 5 sont maintenant livrées.",
+    scopeDescription: "Les Phases 0 à 6 sont maintenant livrées.",
     scopeItems: [
       "Authentification, organisations et rôles",
       "Isolation multi-tenant par Row Level Security",
@@ -98,10 +98,13 @@ export const fr = {
       "Contacts vérifiés et opposition atomique",
       "Campagnes, séquences et génération de trois variantes",
       "Approbation, planification et envoi mock dédupliqué",
+      "OAuth Gmail et Microsoft avec tokens chiffrés",
+      "Inbox unifiée, qualification et arrêt automatique des relances",
+      "Résumé structuré et réponse dans le fil du provider",
     ],
     nextTitle: "Prochaine étape",
     nextDescription:
-      "La Phase 6 connectera Gmail ou Microsoft et construira l’inbox SURFCE, sans modifier la DA propre au produit.",
+      "La Phase 7 transformera les réponses qualifiées en opportunités et tâches, sans commencer avant la prochaine intervention.",
   },
   settings: {
     eyebrow: "Paramètres",

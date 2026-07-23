@@ -1,10 +1,13 @@
 import { personaOutputSchema, type PersonaOutput } from "@/features/personas/schemas";
 import { emailGenerationOutputSchema } from "@/features/messages/schemas";
+import { suggestedReplyOutputSchema, threadSummaryOutputSchema } from "@/features/inbox/schemas";
+import { classifyInboundText } from "@/features/inbox/classification";
 
 import type {
   AiProvider,
   EmailGenerationInput,
   PersonaGenerationInput,
+  ThreadIntelligenceInput,
   VenueRationale,
   VenueRationaleInput,
 } from "./types";
@@ -243,6 +246,58 @@ export class MockAiProvider implements AiProvider {
           : 0,
       reason: "Variante courte, explicite et limitée aux faits de personnalisation vérifiés.",
       missing_information: missing,
+    });
+  }
+
+  async summarizeThread(input: ThreadIntelligenceInput) {
+    const inbound = input.messages.filter((message) => message.direction === "inbound");
+    const latest = inbound.at(-1)?.bodyText ?? "";
+    const intention = classifyInboundText(latest);
+    const participantMatch = latest.match(/(\d{2,4})\s*(?:personnes|participants|invités)/i);
+    const budgetMatch = latest.match(/(?:budget|enveloppe)[^\d]{0,20}([\d\s]+)\s*€?/i);
+    return threadSummaryOutputSchema.parse({
+      summary: latest
+        ? `${input.contactName ?? "Le contact"} répond au sujet « ${input.subject} ». ${latest.slice(0, 360)}`
+        : `Aucune réponse entrante exploitable n’est encore disponible pour « ${input.subject} ».`,
+      intention,
+      need: latest || null,
+      date: null,
+      participantCount: participantMatch ? Number(participantMatch[1]) : null,
+      budget: budgetMatch ? `${budgetMatch[1]?.trim()} €` : null,
+      venue: null,
+      objections: intention === "not_interested" ? ["Le contact n’est pas intéressé."] : [],
+      stakeholders: input.contactName ? [input.contactName] : [],
+      commitments: [],
+      nextActions:
+        intention === "interested" || intention === "asks_information"
+          ? ["Préparer une réponse humaine et confirmer les besoins."]
+          : ["Relire la conversation avant toute action."],
+      confidence: latest ? 0.72 : 0.25,
+    });
+  }
+
+  async draftThreadReply(input: ThreadIntelligenceInput) {
+    const latest = input.messages.filter((message) => message.direction === "inbound").at(-1);
+    const intention = classifyInboundText(latest?.bodyText ?? "");
+    const greeting = input.contactName ? `Bonjour ${input.contactName.split(" ")[0]},` : "Bonjour,";
+    const response =
+      intention === "asks_price"
+        ? "Merci pour votre retour. Je peux vous préparer une proposition chiffrée, après confirmation du format, de la date et du nombre de participants."
+        : intention === "asks_information"
+          ? "Merci pour votre retour. Je peux vous transmettre une synthèse du format et des disponibilités, puis ajuster la proposition à votre contexte."
+          : intention === "interested"
+            ? "Merci pour votre retour. Je vous propose un échange court afin de préciser la date, le nombre de participants et le format recherché."
+            : "Merci pour votre réponse. J’ai bien pris en compte votre message et je reviens vers vous uniquement si une action est nécessaire.";
+    return suggestedReplyOutputSchema.parse({
+      subject: input.subject.toLowerCase().startsWith("re:")
+        ? input.subject
+        : `Re: ${input.subject}`,
+      bodyText: `${greeting}\n\n${response}\n\nBien à vous,`,
+      rationale: "Réponse prudente fondée uniquement sur le dernier message entrant.",
+      riskFlags:
+        intention === "unsubscribe" || intention === "not_interested"
+          ? ["Ne pas envoyer : la conversation indique une opposition ou un refus."]
+          : [],
     });
   }
 }

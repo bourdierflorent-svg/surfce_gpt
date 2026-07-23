@@ -37,6 +37,329 @@ begin
 end;
 $$;
 
+-- Phase 6 — réponses entrantes fictives, classification et arrêt de séquence.
+create or replace function pg_temp.seed_phase6_demo()
+returns void
+language plpgsql
+as $phase6$
+begin
+insert into public.mail_threads (
+  id,
+  organization_id,
+  mailbox_id,
+  provider_thread_id,
+  company_id,
+  contact_id,
+  campaign_id,
+  subject,
+  classification,
+  priority,
+  summary,
+  summary_data,
+  summary_generated_at,
+  summary_prompt_version,
+  last_message_at,
+  last_inbound_at,
+  is_unread
+)
+values
+  (
+    '75000000-0000-0000-0000-000000000001',
+    '10000000-0000-0000-0000-000000000001',
+    '71000000-0000-0000-0000-000000000001',
+    'mock_thread_seed_lina',
+    '50000000-0000-0000-0000-000000000001',
+    '70000000-0000-0000-0000-000000000001',
+    '72000000-0000-0000-0000-000000000001',
+    'Afterwork 20 à 50 personnes pour votre équipe',
+    'interested',
+    'high',
+    'Lina souhaite recevoir une proposition pour un afterwork de 35 personnes en septembre.',
+    '{"summary":"Lina souhaite recevoir une proposition pour un afterwork de 35 personnes en septembre.","intention":"interested","need":"Afterwork d’équipe","date":"Septembre, date à confirmer","participantCount":35,"budget":null,"venue":"Little Room évoqué","objections":[],"stakeholders":["Lina Martin"],"commitments":["SURFCE envoie les disponibilités"],"nextActions":["Proposer deux créneaux et une première estimation"],"confidence":0.82}'::jsonb,
+    now() - interval '20 hours',
+    'thread-summary.v1',
+    now() - interval '20 hours',
+    now() - interval '20 hours',
+    true
+  ),
+  (
+    '75000000-0000-0000-0000-000000000002',
+    '10000000-0000-0000-0000-000000000001',
+    '71000000-0000-0000-0000-000000000001',
+    'mock_thread_seed_alix',
+    '50000000-0000-0000-0000-000000000002',
+    '70000000-0000-0000-0000-000000000009',
+    null,
+    'Demande de devis pour un dîner d’équipe',
+    'asks_price',
+    'high',
+    null,
+    null,
+    null,
+    null,
+    now() - interval '5 hours',
+    now() - interval '5 hours',
+    true
+  ),
+  (
+    '75000000-0000-0000-0000-000000000003',
+    '10000000-0000-0000-0000-000000000001',
+    '71000000-0000-0000-0000-000000000001',
+    'mock_thread_seed_nina',
+    '50000000-0000-0000-0000-000000000002',
+    '70000000-0000-0000-0000-000000000010',
+    null,
+    'Re: proposition séminaire',
+    'not_interested',
+    'normal',
+    null,
+    null,
+    null,
+    null,
+    now() - interval '2 days',
+    now() - interval '2 days',
+    false
+  )
+on conflict (mailbox_id, provider_thread_id) do update
+set
+  company_id = excluded.company_id,
+  contact_id = excluded.contact_id,
+  campaign_id = excluded.campaign_id,
+  subject = excluded.subject,
+  classification = excluded.classification,
+  priority = excluded.priority,
+  summary = excluded.summary,
+  summary_data = excluded.summary_data,
+  summary_generated_at = excluded.summary_generated_at,
+  summary_prompt_version = excluded.summary_prompt_version,
+  last_message_at = excluded.last_message_at,
+  last_inbound_at = excluded.last_inbound_at,
+  is_unread = excluded.is_unread;
+
+insert into public.messages (
+  id,
+  organization_id,
+  thread_id,
+  campaign_id,
+  provider_message_id,
+  internet_message_id,
+  in_reply_to,
+  deduplication_key,
+  direction,
+  sender,
+  recipients,
+  reply_to,
+  subject,
+  body_text,
+  body_html,
+  received_at,
+  status,
+  classification,
+  has_attachments,
+  headers,
+  provider_metadata
+)
+values
+  (
+    '76000000-0000-0000-0000-000000000003',
+    '10000000-0000-0000-0000-000000000001',
+    '75000000-0000-0000-0000-000000000001',
+    '72000000-0000-0000-0000-000000000001',
+    'mock_reply_seed_lina',
+    '<mock-reply-lina@studio-huit.example>',
+    '<mock_message_seed_lina_first@surfce.example>',
+    'provider:71000000-0000-0000-0000-000000000001:mock_reply_seed_lina',
+    'inbound',
+    '{"email":"lina.martin@studio-huit.example","name":"Lina Martin"}'::jsonb,
+    '[{"email":"florent@stargazing.example","name":"Florent — Stargazing"}]'::jsonb,
+    '[]'::jsonb,
+    'Re: Afterwork 20 à 50 personnes pour votre équipe',
+    E'Bonjour Florent,\n\nOui, l’idée nous intéresse pour environ 35 personnes en septembre. Pouvez-vous me proposer deux dates et une première estimation ?\n\nMerci,\nLina',
+    '<p>Bonjour Florent,</p><p>Oui, l’idée nous intéresse pour environ 35 personnes en septembre. Pouvez-vous me proposer deux dates et une première estimation&nbsp;?</p><p>Merci,<br>Lina</p>',
+    now() - interval '20 hours',
+    'received',
+    'interested',
+    false,
+    '{"message-id":"<mock-reply-lina@studio-huit.example>","in-reply-to":"<mock_message_seed_lina_first@surfce.example>"}'::jsonb,
+    '{"provider":"mock","seed":true}'::jsonb
+  ),
+  (
+    '76000000-0000-0000-0000-000000000004',
+    '10000000-0000-0000-0000-000000000001',
+    '75000000-0000-0000-0000-000000000002',
+    null,
+    'mock_reply_seed_alix',
+    '<mock-reply-alix@rive-conseil.example>',
+    null,
+    'provider:71000000-0000-0000-0000-000000000001:mock_reply_seed_alix',
+    'inbound',
+    '{"email":"alix.girard@rive-conseil.example","name":"Alix Girard"}'::jsonb,
+    '[{"email":"florent@stargazing.example","name":"Florent — Stargazing"}]'::jsonb,
+    '[]'::jsonb,
+    'Demande de devis pour un dîner d’équipe',
+    E'Bonjour,\n\nQuel serait le tarif pour un dîner de 60 personnes, avec privatisation et option végétarienne ? Vous trouverez notre brief en pièce jointe.\n\nBien à vous,\nAlix',
+    '<p>Bonjour,</p><p>Quel serait le tarif pour un dîner de 60 personnes, avec privatisation et option végétarienne&nbsp;?</p><p>Bien à vous,<br>Alix</p>',
+    now() - interval '5 hours',
+    'received',
+    'asks_price',
+    true,
+    '{"message-id":"<mock-reply-alix@rive-conseil.example>"}'::jsonb,
+    '{"provider":"mock","seed":true}'::jsonb
+  ),
+  (
+    '76000000-0000-0000-0000-000000000005',
+    '10000000-0000-0000-0000-000000000001',
+    '75000000-0000-0000-0000-000000000003',
+    null,
+    'mock_reply_seed_nina',
+    '<mock-reply-nina@rive-conseil.example>',
+    null,
+    'provider:71000000-0000-0000-0000-000000000001:mock_reply_seed_nina',
+    'inbound',
+    '{"email":"nina.bonnet@rive-conseil.example","name":"Nina Bonnet"}'::jsonb,
+    '[{"email":"florent@stargazing.example","name":"Florent — Stargazing"}]'::jsonb,
+    '[]'::jsonb,
+    'Re: proposition séminaire',
+    E'Bonjour,\n\nMerci pour votre message. Nous ne sommes pas intéressés cette année.\n\nCordialement,\nNina',
+    '<p>Bonjour,</p><p>Merci pour votre message. Nous ne sommes pas intéressés cette année.</p><p>Cordialement,<br>Nina</p>',
+    now() - interval '2 days',
+    'received',
+    'not_interested',
+    false,
+    '{"message-id":"<mock-reply-nina@rive-conseil.example>"}'::jsonb,
+    '{"provider":"mock","seed":true}'::jsonb
+  )
+on conflict (organization_id, deduplication_key) do update
+set
+  thread_id = excluded.thread_id,
+  campaign_id = excluded.campaign_id,
+  provider_message_id = excluded.provider_message_id,
+  internet_message_id = excluded.internet_message_id,
+  in_reply_to = excluded.in_reply_to,
+  sender = excluded.sender,
+  recipients = excluded.recipients,
+  reply_to = excluded.reply_to,
+  subject = excluded.subject,
+  body_text = excluded.body_text,
+  body_html = excluded.body_html,
+  received_at = excluded.received_at,
+  status = excluded.status,
+  classification = excluded.classification,
+  has_attachments = excluded.has_attachments,
+  headers = excluded.headers,
+  provider_metadata = excluded.provider_metadata;
+
+insert into public.message_events (
+  id,
+  organization_id,
+  message_id,
+  event_type,
+  provider_event_id,
+  metadata,
+  occurred_at
+)
+values
+  (
+    '7a000000-0000-0000-0000-000000000001',
+    '10000000-0000-0000-0000-000000000001',
+    '76000000-0000-0000-0000-000000000003',
+    'received',
+    'mock:mock_reply_seed_lina:received',
+    '{"provider":"mock","seed":true}'::jsonb,
+    now() - interval '20 hours'
+  ),
+  (
+    '7a000000-0000-0000-0000-000000000002',
+    '10000000-0000-0000-0000-000000000001',
+    '76000000-0000-0000-0000-000000000003',
+    'campaign_stopped',
+    'mock:mock_reply_seed_lina:campaign_stopped',
+    '{"campaign_id":"72000000-0000-0000-0000-000000000001","enrollment_id":"74000000-0000-0000-0000-000000000001","classification":"interested"}'::jsonb,
+    now() - interval '20 hours'
+  ),
+  (
+    '7a000000-0000-0000-0000-000000000003',
+    '10000000-0000-0000-0000-000000000001',
+    '76000000-0000-0000-0000-000000000004',
+    'received',
+    'mock:mock_reply_seed_alix:received',
+    '{"provider":"mock","seed":true}'::jsonb,
+    now() - interval '5 hours'
+  ),
+  (
+    '7a000000-0000-0000-0000-000000000004',
+    '10000000-0000-0000-0000-000000000001',
+    '76000000-0000-0000-0000-000000000005',
+    'received',
+    'mock:mock_reply_seed_nina:received',
+    '{"provider":"mock","seed":true}'::jsonb,
+    now() - interval '2 days'
+  )
+on conflict (organization_id, provider_event_id)
+where provider_event_id is not null
+do update
+set
+  event_type = excluded.event_type,
+  metadata = excluded.metadata,
+  occurred_at = excluded.occurred_at;
+
+insert into public.message_attachments (
+  id,
+  organization_id,
+  message_id,
+  provider_attachment_id,
+  file_name,
+  content_type,
+  size_bytes,
+  is_inline
+)
+values (
+  '7b000000-0000-0000-0000-000000000001',
+  '10000000-0000-0000-0000-000000000001',
+  '76000000-0000-0000-0000-000000000004',
+  'mock_attachment_brief_alix',
+  'brief-evenement-fictif.pdf',
+  'application/pdf',
+  182400,
+  false
+)
+on conflict (message_id, provider_attachment_id) do update
+set
+  file_name = excluded.file_name,
+  content_type = excluded.content_type,
+  size_bytes = excluded.size_bytes,
+  is_inline = excluded.is_inline;
+
+update public.campaign_enrollments
+set
+  status = 'interested',
+  stopped_at = now() - interval '20 hours',
+  stop_reason = 'inbound_reply:interested',
+  next_send_at = null
+where id = '74000000-0000-0000-0000-000000000001';
+
+update public.messages
+set
+  status = 'cancelled',
+  error_code = 'reply_received',
+  error_message = 'Séquence arrêtée après une réponse entrante.'
+where id = '76000000-0000-0000-0000-000000000002';
+
+update public.contacts
+set last_replied_at = case
+  when id = '70000000-0000-0000-0000-000000000001' then now() - interval '20 hours'
+  when id = '70000000-0000-0000-0000-000000000009' then now() - interval '5 hours'
+  when id = '70000000-0000-0000-0000-000000000010' then now() - interval '2 days'
+  else last_replied_at
+end
+where id in (
+  '70000000-0000-0000-0000-000000000001',
+  '70000000-0000-0000-0000-000000000009',
+  '70000000-0000-0000-0000-000000000010'
+);
+end;
+$phase6$;
+
 insert into public.venues (
   id,
   organization_id,
@@ -1384,3 +1707,5 @@ begin
     completed_at = excluded.completed_at;
 end;
 $$;
+
+select pg_temp.seed_phase6_demo();

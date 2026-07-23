@@ -1,4 +1,4 @@
-# Architecture SURFCE — Phases 0 à 5
+# Architecture SURFCE — Phases 0 à 6
 
 ## Principes
 
@@ -8,7 +8,7 @@
 - **RLS comme autorité finale**, indépendamment de l’affichage des boutons ;
 - **multi-tenant par `organization_id`** ;
 - textes d’interface centralisés dans `src/lib/i18n/fr.ts` ;
-- aucune intégration payante ni appel à un provider réel dans cette livraison.
+- providers réels fail-closed : aucun appel sans consentement et secrets complets.
 
 ## Découpage
 
@@ -27,11 +27,13 @@ src/features/matching/           Scoring déterministe, justification et sélect
 src/features/contacts/           Répertoire, vérification et opposition
 src/features/campaigns/          Séquences, approbation et planification
 src/features/messages/           Génération, test et traitement mock
+src/features/mailboxes/          OAuth, chiffrement, synchronisation et watches
+src/features/inbox/              Conversations, classification, résumé et réponse
 src/providers/places/            Contrat provider et implémentation mock
 src/providers/registries/        Contrat registre et implémentation mock
 src/providers/enrichment/        Contrat analyse website et implémentation mock
 src/providers/contacts/          Contrat vérification e-mail et mock
-src/providers/mail/              Contrat d’expédition et mock déterministe
+src/providers/mail/              Contrat mail, mock, Gmail et Microsoft Graph
 src/providers/ai/                Contrat IA et implémentation déterministe mock
 src/components/map/              Rendu MapLibre et couches GeoJSON locales
 src/components/forms/            Associations accessibles entre labels, aides et erreurs
@@ -44,8 +46,8 @@ supabase/tests/                  Tests pgTAP exécutés contre PostgreSQL
 tests/                           Tests unitaires et invariants statiques
 ```
 
-Les six familles de providers livrées utilisent uniquement des mocks sans réseau. Les providers
-réels et `src/emails` restent réservés aux phases autorisées ultérieurement.
+Les providers Google Workspace et Microsoft 365 sont les premières implémentations réseau. Ils ne
+sont instanciés qu’après déchiffrement serveur d’un token lié à une boîte autorisée.
 
 ## Flux d’authentification
 
@@ -98,7 +100,7 @@ inachevée.
 
 ## RLS
 
-Les vingt-trois tables des Phases 1 à 5 ont RLS activée. Les fonctions privées `is_org_member`,
+Les vingt-cinq tables des Phases 1 à 6 ont RLS activée. Les fonctions privées `is_org_member`,
 `has_org_role` et `shares_org_with` utilisent `security definer` et un `search_path` vide pour
 éviter la récursion des politiques et le détournement de résolution de noms. Elles vivent dans le
 schéma non exposé `private` ; seuls des wrappers `security invoker` contrôlés sont publiés.
@@ -280,6 +282,29 @@ Les RPC Phase 5 sont `SECURITY DEFINER` pour garder ces mutations atomiques. Ell
 explicitement `anon`, n’accordent `EXECUTE` qu’à `authenticated` et vérifient le membership, le
 rôle et l’organisation à l’intérieur de la transaction.
 
+## Modèle et flux Phase 6
+
+`mailboxes` conserve les scopes, curseurs, watches et erreurs de synchronisation. Les tokens OAuth
+restent chiffrés dans les colonnes historiques ; la clé n’entre jamais en base. `mail_threads`
+porte la classification, la priorité, le résumé structuré et la suggestion. `messages` ajoute les
+identifiants Internet, le chaînage de réponse, l’état provider et des métadonnées sans secret.
+
+`message_events` trace réception, envoi, correction et arrêt de campagne. `message_attachments`
+ne conserve que les métadonnées contrôlées ; aucun téléchargement distant automatique n’a lieu.
+
+1. le démarrage OAuth crée PKCE, état signé et cookie HTTP-only chiffré ;
+2. le callback échange le code, chiffre les tokens et démarre le watch provider ;
+3. webhook ou cron charge la boîte avec le client serveur, renouvelle le token si nécessaire et
+   lit uniquement les changements depuis le curseur ;
+4. `ingest_provider_message`, réservée à `service_role`, déduplique et écrit le fil ;
+5. une réponse entrante arrête l’inscription, annule les messages futurs et ajoute une opposition
+   si elle exprime un désabonnement ;
+6. la correction humaine et le résumé sont audités ;
+7. une réponse est réservée localement, envoyée dans le thread provider puis finalisée.
+
+L’expédition de campagne utilise désormais `claim_campaign_message`, l’appel provider puis
+`finalize_campaign_message`. Le cron ne dépend plus d’une session navigateur.
+
 ## Design system et direction Phases 2 et 3
 
 Le thème lumineux utilise des tokens CSS sémantiques : fond, carte, premier plan, primaire, muted,
@@ -312,10 +337,16 @@ validation et expédition simulée. Les vues Contacts prennent la forme d’un r
 campagnes restent des manifestes à faible volume, sans reproduire un client mail ni un tableau
 Kanban générique.
 
+La Phase 6 adopte la « table de correspondance » : liste compacte, fil central et registre latéral
+de signaux. Sa ligne de réponse relie entrée, classification, arrêt de séquence et action suivante
+sans imiter Gmail ou Outlook.
+
 ## Décisions différées
 
 - implémentations réelles SIRENE, website, Hunter, Dropcontact et OpenAI : après configuration et
   validation de leurs conditions d’usage ;
-- OAuth Gmail/Microsoft, tokens chiffrés, synchronisation, webhooks et inbox : Phase 6 ;
-- exécution autonome du cron de production : après configuration de `CRON_SECRET`, du contexte
-  serveur et de l’URL publique.
+- providers réels Places, SIRENE, Hunter, Dropcontact et OpenAI : après validation de leurs coûts
+  et conditions d’usage ;
+- opportunités et tâches issues des réponses qualifiées : Phase 7 ;
+- activation des crons de production : après ajout de `CRON_SECRET` et
+  `SUPABASE_SERVICE_ROLE_KEY` dans Vercel.

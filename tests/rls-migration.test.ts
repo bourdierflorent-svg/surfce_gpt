@@ -73,10 +73,14 @@ describe("phase 1 database security", () => {
     expect(remoteAssertions).toContain("phase_1_rls_assertions_passed");
   });
 
-  it("never references the service role key from application source", () => {
-    const source = listSourceFiles(join(repositoryRoot, "src"))
+  it("keeps the service role key isolated in the dedicated server-only client", () => {
+    const sourceFiles = listSourceFiles(join(repositoryRoot, "src"));
+    const adminClient = join(repositoryRoot, "src/lib/supabase/admin.ts");
+    const otherSource = sourceFiles
+      .filter((path) => path !== adminClient)
       .map((path) => readFileSync(path, "utf8"))
       .join("\n");
-    expect(source).not.toContain("SUPABASE_SERVICE_ROLE_KEY");
+    expect(otherSource).not.toContain("SUPABASE_SERVICE_ROLE_KEY");
+    expect(readFileSync(adminClient, "utf8")).toContain('import "server-only"');
   });
 });

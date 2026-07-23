@@ -22,7 +22,8 @@ racine. Aucun code métier antérieur n’a donc été supprimé ou remplacé.
 | Phase 3 — Entreprises et Explorer    | Déployée       | MapLibre local, provider mock, import dédupliqué, sources, fiches, RLS et PostGIS                           |
 | Phase 4 — Enrichissement et matching | Déployée       | Providers mock, jobs, persona Zod, validation humaine, score explicable et recommandations                  |
 | Phase 5 — Contacts et campagnes mock | Déployée       | Contacts, vérification, séquences, validation, planification, envoi mock et suppression atomique            |
-| Phases 6 à 9                         | Non commencées | Providers mail externes, inbox, CRM, analytics et durcissement restent hors de cette intervention           |
+| Phase 6 — Gmail/Microsoft et inbox   | Déployée       | OAuth, tokens chiffrés, sync, webhooks, fils, qualification, réponses et arrêt automatique                  |
+| Phases 7 à 9                         | Non commencées | Opportunités, tâches, analytics et durcissement restent hors de cette intervention                          |
 
 ## Identité du produit
 
@@ -185,19 +186,60 @@ racine. Aucun code métier antérieur n’a donc été supprimé ou remplacé.
 - Performance Advisor sans clé étrangère non indexée ; seuls des index neufs encore inutilisés sont
   signalés au niveau informationnel.
 
+## Livré en Phase 6
+
+- OAuth Authorization Code + PKCE pour Google Workspace et Microsoft 365, avec état signé,
+  cookie HTTP-only chiffré et callback lié à l’utilisateur et à l’organisation ;
+- chiffrement AES-256-GCM des access/refresh tokens, renouvellement automatique et suppression des
+  secrets à la déconnexion ;
+- providers Gmail et Microsoft Graph conformes au contrat mail commun, y compris la réponse dans
+  le fil d’origine ;
+- synchronisation incrémentale Gmail History et Microsoft Delta, curseurs persistés, gestion des
+  erreurs et synchronisation manuelle ;
+- watches Gmail Pub/Sub et subscriptions Microsoft Graph, avec renouvellement planifié et webhooks
+  fail-closed ;
+- normalisation des messages entrants, assainissement HTML, protection des en-têtes MIME,
+  déduplication provider et métadonnées de pièces jointes ;
+- tables `message_events` et `message_attachments`, extension de `mailboxes`, `mail_threads` et
+  `messages`, contraintes, index et RLS ;
+- ingestion atomique service-only associant le bon fil, le contact, la société et la campagne ;
+- arrêt automatique et transactionnel des relances dès une réponse humaine, avec opposition
+  enregistrée pour les désabonnements ;
+- livraison sortante réservée puis finalisée de manière idempotente, exclusivement avec le client
+  serveur `service_role` ;
+- ancien helper d’envoi mock retiré de l’API authentifiée et conservé uniquement pour les tests
+  service-role ;
+- inbox filtrable par qualification, priorité, état de lecture et recherche ;
+- écran de fil structuré en « ligne de réponse » : événements et correspondances, conversation,
+  résumé, qualification, association et réponse ;
+- classification déterministe automatique, correction humaine, résumé structuré et suggestion de
+  réponse via le provider IA mock ;
+- routes de connexion, callback, synchronisation, déconnexion, cron, webhook, qualification,
+  association, lecture, résumé, brouillon et réponse ;
+- trois réponses entrantes fictives semées, dont un intérêt, une demande de tarif avec pièce jointe
+  et une opposition ;
+- direction visuelle « table de correspondance » produite avec `frontend-design` ;
+- audit selon `web-design-guidelines` et corrections des focus, états asynchrones, filtres URL,
+  avertissement de brouillon non enregistré et longues listes ;
+- sept migrations Phase 6 appliquées au projet distant ;
+- assertions distantes rollback-only Phase 5 et Phase 6 réussies après durcissement ;
+- Security Advisor réduit à quatre RPC authentifiées intentionnelles, contrôlées par rôle et
+  organisation, plus le réglage Auth des mots de passe compromis ;
+- Performance Advisor sans clé étrangère non indexée ; seuls les index neufs sans activité sont
+  signalés au niveau informationnel.
+
 ## Vérifications
 
 | Commande                         | Résultat actuel                                                                 |
 | -------------------------------- | ------------------------------------------------------------------------------- |
 | `npm run lint`                   | Réussi — 0 erreur, 0 avertissement                                              |
 | `npm run typecheck`              | Réussi                                                                          |
-| `npm test`                       | Réussi — 13 fichiers, 98 tests                                                  |
+| `npm test`                       | Réussi — 15 fichiers, 115 tests                                                 |
 | `npm run format:check`           | Réussi                                                                          |
-| `npm run build`                  | Réussi — 48 routes générées avec Next.js 16.2.11                                |
-| Smoke test Phase 5               | Réussi — login 200, Contacts/Campagnes 307 vers login, cron fermé en 503        |
+| `npm run build`                  | Réussi — routes Inbox, OAuth, webhook et cron générées avec Next.js 16.2.11     |
 | `npm run test:rls`               | Tenté — échec de connexion à PostgreSQL local, Docker/base locale indisponible  |
 | Assertions RLS distantes         | Réussi — isolation de deux organisations et permissions admin/viewer validées   |
-| Supabase Security Advisor        | `anon` bloqué ; 3 RPC authentifiées intentionnelles et protection Auth à régler |
+| Supabase Security Advisor        | `anon` bloqué ; 4 RPC authentifiées intentionnelles et protection Auth à régler |
 | Auth propriétaire distant        | Réussi — connexion par mot de passe et émission d’un jeton validées             |
 | Assertions RLS Phase 2           | Réussi — isolation, lecture viewer et écriture venue manager validées           |
 | Lecture RLS avec le compte admin | Réussi — 4 établissements visibles                                              |
@@ -208,9 +250,12 @@ racine. Aucun code métier antérieur n’a donc été supprimé ou remplacé.
 | Assertions RLS Phase 4           | Réussi — isolation, viewer, commercial assigné et idempotence                   |
 | Schéma distant Phase 4           | Réussi — 4 tables RLS, 16 politiques, 2 migrations et 0 FK non indexée          |
 | Données mock Phase 4             | Réussi — 1 persona, 4 matchs, 3 jobs, 1 run IA et budget inconnu à `null`       |
-| Assertions RLS Phase 5           | Réussi — isolation, rôles, suppression et absence de double envoi               |
+| Assertions RLS Phase 5           | Réussi — régression rejouée avec livraison mock réservée au service role        |
 | Schéma distant Phase 5           | Réussi — 9 tables RLS, 30 politiques, 10 migrations et 0 FK non indexée         |
 | Données mock Phase 5             | Réussi — 15 contacts, 1 boîte, 2 campagnes, 8 étapes et 2 messages              |
+| Assertions RLS Phase 6           | Réussi — idempotence, arrêt, rôles et correction manuelle, rollback final       |
+| Schéma distant Phase 6           | Réussi — 2 nouvelles tables RLS et 7 migrations                                 |
+| Données mock Phase 6             | Réussi — 3 réponses, 1 arrêt de campagne et 1 pièce jointe                      |
 
 Les invariants RLS sont aussi contrôlés par Vitest. Les scénarios distants ont été exécutés avec des
 utilisateurs fictifs dans des transactions ensuite annulées. Le test pgTAP local reste disponible
@@ -218,67 +263,74 @@ pour une future installation Docker.
 
 ## Variables manquantes
 
-La connexion au projet Supabase est configurée localement dans `.env.local`, fichier ignoré par Git.
-La seule valeur publique encore non définie est :
+La connexion publique Supabase et `NEXT_PUBLIC_APP_URL=https://surfce-gpt.vercel.app` sont
+configurées localement dans `.env.local`, fichier ignoré par Git. Les valeurs suivantes restent à
+ajouter ou à confirmer dans l’environnement Vercel :
 
-- `NEXT_PUBLIC_APP_URL` ;
-
-Variables serveur préparées mais non utilisées dans ce périmètre :
-
+- `NEXT_PUBLIC_APP_URL=https://surfce-gpt.vercel.app` ;
+- `NEXT_PUBLIC_SUPABASE_URL` et `NEXT_PUBLIC_SUPABASE_ANON_KEY` ;
 - `SUPABASE_SERVICE_ROLE_KEY` ;
-- `SUPABASE_DATABASE_URL` ;
-- `APP_ENCRYPTION_KEY` ;
+- `APP_ENCRYPTION_KEY`, clé aléatoire de 32 octets encodée en Base64 ;
 - `CRON_SECRET`.
 
-La Phase 5 fonctionne entièrement avec les valeurs par défaut `AI_PROVIDER=mock`,
-`COMPANY_REGISTRY_PROVIDER=mock`, `CONTACT_VERIFICATION_PROVIDER=mock` et `MAIL_PROVIDER=mock`.
-Les variables suivantes manquent pour activer de futurs providers réels, mais ne bloquent pas le
-scénario mock :
+Pour connecter Google Workspace :
 
+- `GOOGLE_CLIENT_ID` et `GOOGLE_CLIENT_SECRET` ;
+- `GOOGLE_REDIRECT_URI=https://surfce-gpt.vercel.app/api/oauth/google/callback` ;
+- `GOOGLE_PUBSUB_TOPIC` et `GOOGLE_WEBHOOK_SECRET`.
+
+Pour connecter Microsoft 365 :
+
+- `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET` et `MICROSOFT_TENANT_ID` ;
+- `MICROSOFT_REDIRECT_URI=https://surfce-gpt.vercel.app/api/oauth/microsoft/callback` ;
+- `MICROSOFT_WEBHOOK_CLIENT_STATE`.
+
+Variables optionnelles ou réservées aux autres providers :
+
+- `MAIL_WEBHOOK_SECRET` pour le webhook générique/mock ;
+- `SUPABASE_DATABASE_URL` pour automatiser les migrations, non requise au runtime ;
 - `OPENAI_API_KEY` et `AI_DEFAULT_MODEL` ;
 - `SIRENE_API_KEY` et `SIRENE_API_BASE_URL` ;
 - `HUNTER_API_KEY` ;
 - `DROPCONTACT_API_KEY`.
 
-Les identifiants OAuth Phase 6 ne sont pas configurés :
-
-- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` et `GOOGLE_REDIRECT_URI` ;
-- `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET`, `MICROSOFT_TENANT_ID` et
-  `MICROSOFT_REDIRECT_URI`.
-
-Les sélecteurs de providers peuvent rester absents de `.env.local` : le fallback serveur `mock`
-est explicite dans le code.
-
-Toutes les clés de providers externes restent volontairement vides et aucun appel externe Phase 4
-n’est effectué.
+Les sélecteurs `AI_PROVIDER`, `COMPANY_REGISTRY_PROVIDER`, `CONTACT_VERIFICATION_PROVIDER` et
+`MAIL_PROVIDER` peuvent rester absents : le fallback serveur `mock` est explicite. Le scénario mock
+de la Phase 6 reste utilisable sans appel externe ni coût.
 
 ## Écarts et risques
 
 1. Docker n’est pas installé/détecté : `npm run test:rls` ne peut pas utiliser PostgreSQL local. Le
-   scénario RLS équivalent est toutefois validé sur le projet distant.
-2. `NEXT_PUBLIC_APP_URL` reste volontairement vide jusqu’au choix de l’URL de déploiement.
-3. Supabase Auth signale que la protection contre les mots de passe compromis est désactivée. Ce
+   scénario RLS équivalent et sa régression Phase 5 sont toutefois validés sur le projet distant.
+2. Les secrets serveur et OAuth ne sont pas encore fournis dans Vercel. La production peut afficher
+   l’inbox mock, mais la connexion, la synchronisation et la livraison Gmail/Microsoft restent
+   volontairement fermées.
+3. Les applications Google Cloud et Microsoft Entra doivent déclarer les redirect URIs exactes.
+   Gmail nécessite aussi un topic Pub/Sub et sa subscription push ; Microsoft nécessite les
+   autorisations Graph et le callback webhook public.
+4. Supabase Auth signale que la protection contre les mots de passe compromis est désactivée. Ce
    réglage doit être activé avant la production depuis les paramètres Auth.
-4. Les trois RPC Phase 5 sont `SECURITY DEFINER` afin de garantir leurs mutations atomiques. Elles
-   ne sont pas exécutables par `anon`, vérifient le membership et le rôle en interne, mais restent
-   signalées par le Security Advisor car elles sont appelables par `authenticated`.
-5. La route cron de Phase 5 reste fermée tant que `CRON_SECRET` n’est pas défini. Son utilisation
-   autonome en déploiement nécessitera aussi un contexte serveur contrôlé avant activation.
-6. Les valeurs commerciales des lieux, offres, entreprises, personas et recommandations sont des
+5. Quatre RPC métier atomiques restent `SECURITY DEFINER` et exécutables par `authenticated` :
+   inscription en campagne, opposition, association et classification d’un fil. Elles bloquent
+   `anon` et vérifient l’organisation et le rôle en interne, mais restent signalées par le Security
+   Advisor.
+6. `npm audit` signale trois vulnérabilités connues dans l’arbre de dépendances, dont une modérée et
+   deux élevées. Aucun `npm audit fix --force` n’a été appliqué afin d’éviter une mise à niveau
+   cassante non revue.
+7. Les valeurs commerciales des lieux, offres, entreprises, personas et recommandations sont des
    données de démonstration à valider, jamais des promesses définitives. Toutes les sociétés
    Explorer et tous les contacts Phase 5 sont fictifs.
-7. Le mode aperçu sert au contrôle visuel uniquement et ne remplace pas une session Supabase.
+8. Le mode aperçu sert au contrôle visuel uniquement et ne remplace pas une session Supabase.
 
 ## Plan des prochaines phases
 
-1. **Phase 6** — Gmail/Microsoft et inbox ;
-2. Phase 7 — opportunités et tâches ;
-3. Phase 8 — dashboard métier, analytics et conformité ;
-4. Phase 9 — durcissement production et E2E.
+1. **Phase 7** — opportunités et tâches ;
+2. Phase 8 — dashboard métier, analytics et conformité ;
+3. Phase 9 — durcissement production et E2E.
 
 ## Prochaine phase
 
-**Phase 6 — Gmail/Microsoft et inbox.** La prochaine intervention doit ajouter OAuth, le stockage
-chiffré des tokens, la synchronisation, les webhooks, les fils de discussion entrants et le
-classement des réponses. Elle ne doit commencer qu’après réception de l’URL publique de
-l’application et configuration des redirect URIs et secrets adaptés.
+**Phase 7 — Opportunités et tâches.** La prochaine intervention doit ajouter le pipeline, le
+Kanban, les tâches, les rendez-vous, la proposition simple, le revenu pondéré et les automatisations
+depuis l’inbox. Elle commencera par transformer une réponse positive qualifiée en opportunité
+auditable, sans démarrer les analytics de Phase 8.

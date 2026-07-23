@@ -4,10 +4,11 @@ SURFCE est un outil indépendant de prospection B2B et de CRM événementiel, co
 son propriétaire. Stargazing constitue son premier cas d’usage métier, sans définir la marque ni
 la direction artistique de SURFCE.
 
-Le dépôt couvre actuellement les **Phases 0 à 5** du cahier des charges : socle Next.js,
+Le dépôt couvre actuellement les **Phases 0 à 6** du cahier des charges : socle Next.js,
 authentification Supabase SSR, organisations et rôles, registre des établissements, Explorer,
-entreprises, enrichissement mock, personas, matching, contacts et campagnes mock. Aucun provider
-externe payant et aucun envoi réel ne sont activés.
+entreprises, enrichissement mock, personas, matching, contacts, campagnes et inbox connectable.
+Google Workspace et Microsoft 365 restent fermés tant que leurs secrets OAuth ne sont pas
+configurés.
 
 ## Prérequis
 
@@ -35,7 +36,7 @@ Ouvrir ensuite `http://localhost:3000/login`.
 
 ## Variables d’environnement
 
-### Configuration publique des Phases 1 à 5
+### Configuration publique des Phases 1 à 6
 
 | Variable                        | Exposition | Usage                               |
 | ------------------------------- | ---------- | ----------------------------------- |
@@ -43,22 +44,24 @@ Ouvrir ensuite `http://localhost:3000/login`.
 | `NEXT_PUBLIC_SUPABASE_URL`      | Navigateur | URL du projet Supabase              |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Navigateur | Clé publique/anon protégée par RLS  |
 
-Seules les deux variables Supabase sont requises pour l’authentification actuelle.
+Les deux variables Supabase sont requises pour l’authentification. L’URL canonique devient
+obligatoire pour les callbacks OAuth et les webhooks Microsoft.
 
-### Serveur, prévues pour les phases suivantes
+### Serveur Phase 6
 
-| Variable                    |       Phase | Usage                                                    |
-| --------------------------- | ----------: | -------------------------------------------------------- |
-| `SUPABASE_SERVICE_ROLE_KEY` | Jobs futurs | Administration serveur uniquement, jamais dans le client |
-| `SUPABASE_DATABASE_URL`     | Déploiement | Migrations automatisées                                  |
-| `APP_ENCRYPTION_KEY`        |           6 | Chiffrement des tokens OAuth                             |
-| `CRON_SECRET`               |          5+ | Protection des routes planifiées                         |
+| Variable                    |       Phase | Usage                                                  |
+| --------------------------- | ----------: | ------------------------------------------------------ |
+| `SUPABASE_SERVICE_ROLE_KEY` |           6 | Synchronisation et cron serveur, jamais dans le client |
+| `SUPABASE_DATABASE_URL`     | Déploiement | Migrations automatisées                                |
+| `APP_ENCRYPTION_KEY`        |           6 | AES-256-GCM des tokens OAuth                           |
+| `CRON_SECRET`               |          5+ | Protection des trois routes planifiées                 |
 
 Toutes les autres variables sont décrites dans `.env.example`. La carte Phase 3 utilise un style
 vectoriel local. Les Phases 4 et 5 utilisent `AI_PROVIDER=mock`,
 `COMPANY_REGISTRY_PROVIDER=mock`, `CONTACT_VERIFICATION_PROVIDER=mock` et `MAIL_PROVIDER=mock` par
 défaut : aucune clé de carte, de registre, de vérification, d’enrichissement, d’IA ou de mail
-externe n’est nécessaire. Les clés Gmail, Microsoft et monitoring restent inutilisées.
+externe n’est nécessaire. Les clés Gmail et Microsoft activent les connexions réelles ; elles ne
+sont jamais nécessaires au parcours mock.
 
 ## Supabase local
 
@@ -86,7 +89,8 @@ migrations doivent être revues puis appliquées par la chaîne de déploiement.
 - le proxy racine rafraîchit les jetons avant les composants serveur ;
 - les contrôles d’interface utilisent la même matrice de rôles que les gardes serveur ;
 - la base reste l’autorité finale grâce aux politiques RLS ;
-- aucune clé `service_role` n’est référencée dans `src/`.
+- la clé `service_role` n’est chargée que par le client serveur des jobs de synchronisation et
+  n’est jamais exposée à un composant client.
 
 Routes actuellement disponibles :
 
@@ -112,6 +116,8 @@ Routes actuellement disponibles :
 - `/campaigns/new` ;
 - `/campaigns/[campaignId]` ;
 - `/campaigns/[campaignId]/edit` ;
+- `/inbox` ;
+- `/inbox/[threadId]` ;
 - `/settings/mailboxes` ;
 - `/api/discovery/search`, `/import`, `/import-batch`, `/deduplicate` et `/saved` ;
 - `/api/companies/[id]/enrich`, `/verify`, `/persona` et `/match-venues`.
@@ -119,7 +125,13 @@ Routes actuellement disponibles :
 - `/api/campaigns`, puis `/api/campaigns/[id]/enroll`, `/unenroll`, `/preview`, `/approve`,
   `/launch` et `/pause` ;
 - `/api/messages/generate`, `/send-test` et `/send` ;
-- `/api/cron/process-campaigns`, fermée tant que `CRON_SECRET` n’est pas configuré.
+- `/api/mailboxes/[provider]/connect`, `/api/oauth/[provider]/callback`, synchronisation et
+  déconnexion ;
+- `/api/threads/[id]/summarize`, `/draft-reply`, `/reply`, `/associate` et `/read` ;
+- `/api/messages/[id]/classify` ;
+- `/api/webhooks/google/mail`, `/microsoft/mail` et `/provider/[provider]` ;
+- `/api/cron/process-campaigns`, `/sync-mailboxes` et `/refresh-mail-watches`, fermées tant que
+  `CRON_SECRET` n’est pas configuré.
 
 ## Établissements, offres et galerie
 
@@ -190,6 +202,30 @@ Le scénario complet s’exécute à coût nul. Les identifiants de message et d
 et explicitement marqués `mock`. La route cron est protégée par `CRON_SECRET` et reste fail-closed
 tant que ce secret n’est pas fourni.
 
+## Gmail, Microsoft 365 et inbox
+
+La Phase 6 livre :
+
+- OAuth Authorization Code + PKCE avec état signé, callback lié à l’organisation et à
+  l’utilisateur ;
+- chiffrement AES-256-GCM des access/refresh tokens et suppression à la déconnexion ;
+- renouvellement automatique des tokens, synchronisation Gmail History et Microsoft Graph Delta ;
+- watches Gmail Pub/Sub et subscriptions Microsoft Graph avec routes webhook fail-closed ;
+- normalisation des messages, HTML entrant assaini, déduplication provider et métadonnées de
+  pièces jointes limitées à 25 Mo ;
+- arrêt transactionnel des relances à toute réponse humaine et opposition automatique pour les
+  désabonnements ;
+- inbox filtrable, qualification manuelle, résumé structuré et suggestion de réponse mock ;
+- réponse conservée dans le fil Gmail ou Microsoft, avec réservation locale idempotente ;
+- crons autonomes utilisant uniquement le client serveur `service_role`.
+
+Les callbacks de production sont :
+
+- `https://surfce-gpt.vercel.app/api/oauth/google/callback` ;
+- `https://surfce-gpt.vercel.app/api/oauth/microsoft/callback`.
+
+Le parcours mock et les trois réponses fictives du seed restent disponibles sans secret externe.
+
 ## Qualité et tests
 
 ```powershell
@@ -207,7 +243,8 @@ npm run test:rls
 
 Les scénarios vérifient notamment l’isolation entre organisations, les matrices de rôles des lieux,
 entreprises, contacts et campagnes, l’import idempotent, la géométrie rayon/polygone, les jobs, le
-persona Zod, le scoring explicable, la suppression et l’absence de double envoi mock.
+persona Zod, le scoring explicable, la suppression, l’absence de double envoi, le chiffrement
+OAuth, l’assainissement HTML et l’arrêt d’une campagne sur réponse.
 
 ## Déploiement Vercel
 
@@ -221,19 +258,20 @@ persona Zod, le scoring explicable, la suppression et l’absence de double envo
 
 `MockPlacesProvider`, `MockCompanyRegistryProvider`, `MockWebsiteEnrichmentProvider`,
 `MockContactVerificationProvider`, `MockMailProvider` et `MockAiProvider` sont implémentés derrière
-des interfaces. Ils n’effectuent aucun appel distant et annoncent un coût nul. Les implémentations
-réelles Places, SIRENE, Hunter, Dropcontact et OpenAI restent désactivées tant que leurs clés et
-règles d’usage ne sont pas configurées. Gmail et Microsoft 365 ne seront abordés qu’en Phase 6,
-après configuration de l’URL de l’application et des redirect URIs.
+des interfaces. Ils n’effectuent aucun appel distant et annoncent un coût nul. `GmailMailProvider`
+et `MicrosoftMailProvider` implémentent désormais le même contrat ; ils restent inactifs sans
+consentement OAuth. Places, SIRENE, Hunter, Dropcontact et OpenAI restent désactivés tant que leurs
+clés et règles d’usage ne sont pas configurées.
 
 ## Limitations connues
 
 - le jeu Explorer est fictif et limité à Paris tant qu’aucun provider réel n’est configuré ;
 - les données commerciales Stargazing du seed doivent être vérifiées et complétées ;
 - l’exécution pgTAP locale requiert Docker ;
-- les trois RPC Phase 5 sont volontairement appelables par les seuls utilisateurs authentifiés et
-  signalées comme `SECURITY DEFINER` par le linter Supabase ;
-- l’URL publique et les secrets OAuth/cron ne sont pas encore configurés.
+- les RPC atomiques authentifiées sont volontairement `SECURITY DEFINER`, révoquées à `anon` et
+  contrôlent rôle et organisation en interne ;
+- l’URL publique est connue, mais les secrets OAuth, webhook, cron, chiffrement et service role
+  doivent encore être ajoutés à l’environnement Vercel.
 
 Voir [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) et
 [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) pour l’état détaillé.

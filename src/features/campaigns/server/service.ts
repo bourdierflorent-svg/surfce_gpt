@@ -14,7 +14,14 @@ import { AuthorizationError } from "@/lib/errors/authorization-error";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getAiProvider } from "@/providers/ai";
 import type { AppAuthContext } from "@/types/auth";
-import type { CampaignRow, ContactRow, DataSourceRow, Json, MessageRow } from "@/types/database";
+import type {
+  CampaignRow,
+  ContactRow,
+  DataSourceRow,
+  Json,
+  MailboxRow,
+  MessageRow,
+} from "@/types/database";
 
 import { sendWindowSchema, type CreateCampaignInput } from "../schemas";
 import { scheduleCampaignStep } from "../scheduling";
@@ -55,7 +62,7 @@ export async function createCampaign(
     .eq("id", input.mailboxId)
     .maybeSingle();
   if (mailboxError || !mailbox || mailbox.status !== "connected") {
-    throw new Error("Sélectionnez une boîte mock connectée.");
+    throw new Error("Sélectionnez une boîte connectée.");
   }
   if (context.membership.role === "sales" && mailbox.user_id !== context.user.id) {
     throw new AuthorizationError();
@@ -615,10 +622,10 @@ export async function loadMessageForSending(
   message: MessageRow;
   campaign: CampaignRow;
   contact: ContactRow;
-  mailbox: { email_address: string; display_name: string };
+  mailbox: MailboxRow;
 }> {
   assertOrganizationPermission(context.membership.role, "messages:send");
-  if (context.isPreview) throw new Error("L’envoi mock est désactivé en mode aperçu.");
+  if (context.isPreview) throw new Error("L’envoi est désactivé en mode aperçu.");
   const supabase = await createSupabaseServerClient();
   const { data: message, error } = await supabase
     .from("messages")
@@ -638,11 +645,7 @@ export async function loadMessageForSending(
   if (enrollmentError || !enrollment) throw new Error("Inscription indisponible.");
   const [contactResult, mailboxResult] = await Promise.all([
     supabase.from("contacts").select("*").eq("id", enrollment.contact_id).single(),
-    supabase
-      .from("mailboxes")
-      .select("email_address, display_name")
-      .eq("id", campaign.mailbox_id)
-      .single(),
+    supabase.from("mailboxes").select("*").eq("id", campaign.mailbox_id).single(),
   ]);
   if (contactResult.error || mailboxResult.error) throw new Error("Destinataire indisponible.");
   return {
