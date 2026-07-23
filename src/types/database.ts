@@ -594,6 +594,63 @@ export interface AuditLogRow extends Record<string, unknown> {
   created_at: string;
 }
 
+export interface ComplianceSettingsRow extends Record<string, unknown> {
+  organization_id: string;
+  default_lawful_basis: string;
+  contact_retention_days: number;
+  message_retention_days: number;
+  provider_log_retention_days: number;
+  audit_retention_days: number;
+  anonymize_inactive_contacts: boolean;
+  retain_suppression_proof: boolean;
+  tracking_enabled: boolean;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AnalyticsExportRow extends Record<string, unknown> {
+  id: string;
+  organization_id: string;
+  requested_by: string;
+  export_type: "analytics_overview" | "analytics_breakdown" | "contact_subject";
+  format: "csv" | "json";
+  filters: Json;
+  columns: string[];
+  row_count: number;
+  status: "completed" | "failed";
+  checksum: string | null;
+  expires_at: string | null;
+  created_at: string;
+}
+
+export interface RetentionRunRow extends Record<string, unknown> {
+  id: string;
+  organization_id: string;
+  requested_by: string | null;
+  mode: "simulation" | "execution";
+  status: "processing" | "completed" | "failed";
+  settings_snapshot: Json;
+  report: Json;
+  error: string | null;
+  started_at: string;
+  completed_at: string | null;
+  created_at: string;
+}
+
+export interface PrivacyRequestRow extends Record<string, unknown> {
+  id: string;
+  organization_id: string;
+  contact_id: string | null;
+  requested_by: string;
+  request_type: "access" | "anonymize" | "delete";
+  status: "processing" | "completed" | "rejected";
+  reason: string;
+  result: Json;
+  completed_at: string | null;
+  created_at: string;
+}
+
 export interface Database {
   __InternalSupabase: {
     PostgrestVersion: "14.5";
@@ -638,6 +695,16 @@ export interface Database {
         Update: Partial<AuditLogRow>;
         Relationships: [];
       };
+      analytics_exports: {
+        Row: AnalyticsExportRow;
+        Insert: Partial<AnalyticsExportRow> &
+          Pick<
+            AnalyticsExportRow,
+            "organization_id" | "requested_by" | "export_type" | "format" | "columns"
+          >;
+        Update: Partial<AnalyticsExportRow>;
+        Relationships: [];
+      };
       campaign_enrollments: {
         Row: CampaignEnrollmentRow;
         Insert: Partial<CampaignEnrollmentRow> &
@@ -662,6 +729,12 @@ export interface Database {
         Update: Partial<CompanyRow>;
         Relationships: [];
       };
+      compliance_settings: {
+        Row: ComplianceSettingsRow;
+        Insert: Partial<ComplianceSettingsRow> & Pick<ComplianceSettingsRow, "organization_id">;
+        Update: Partial<ComplianceSettingsRow>;
+        Relationships: [];
+      };
       contacts: {
         Row: ContactRow;
         Insert: Partial<ContactRow> &
@@ -670,6 +743,20 @@ export interface Database {
             "organization_id" | "company_id" | "first_name" | "last_name" | "full_name"
           >;
         Update: Partial<ContactRow>;
+        Relationships: [];
+      };
+      privacy_requests: {
+        Row: PrivacyRequestRow;
+        Insert: Partial<PrivacyRequestRow> &
+          Pick<PrivacyRequestRow, "organization_id" | "requested_by" | "request_type" | "reason">;
+        Update: Partial<PrivacyRequestRow>;
+        Relationships: [];
+      };
+      retention_runs: {
+        Row: RetentionRunRow;
+        Insert: Partial<RetentionRunRow> &
+          Pick<RetentionRunRow, "organization_id" | "mode" | "status">;
+        Update: Partial<RetentionRunRow>;
         Relationships: [];
       };
       company_locations: {
@@ -1299,6 +1386,18 @@ export interface Database {
       };
       process_mock_campaign_message: {
         Args: { p_message_id: string; p_provider_message_id: string };
+        Returns: Json;
+      };
+      process_contact_privacy_request: {
+        Args: {
+          p_contact_id: string;
+          p_request_type: "anonymize" | "delete";
+          p_reason: string;
+        };
+        Returns: Json;
+      };
+      run_retention: {
+        Args: { p_organization_id: string; p_dry_run?: boolean };
         Returns: Json;
       };
       search_companies_in_polygon: {

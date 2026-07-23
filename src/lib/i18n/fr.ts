@@ -67,7 +67,7 @@ export const fr = {
     eyebrow: "Vue d’ensemble",
     title: "Bonjour",
     description:
-      "L’Explorer, les campagnes et la boîte de correspondance connectée sont opérationnels.",
+      "La prospection, la conversion, les analyses et la gouvernance des données sont opérationnelles.",
     cards: {
       organizations: "Organisation active",
       members: "Membres accessibles",
@@ -82,10 +82,10 @@ export const fr = {
     },
     values: {
       serverAndDatabase: "Serveur + base",
-      protectedTables: "31 tables métier",
+      protectedTables: "35 tables métier",
     },
     scopeTitle: "Périmètre livré",
-    scopeDescription: "Les Phases 0 à 7 sont maintenant livrées.",
+    scopeDescription: "Les Phases 0 à 8 sont maintenant livrées.",
     scopeItems: [
       "Authentification, organisations et rôles",
       "Isolation multi-tenant par Row Level Security",
@@ -104,10 +104,12 @@ export const fr = {
       "Pipeline configurable, tâches et rendez-vous",
       "Propositions versionnées et revenu pondéré",
       "Réponse positive transformable en opportunité auditée",
+      "KPI sourcés, filtres transverses et export CSV audité",
+      "Rétention simulable, droits des personnes et journal d’audit",
     ],
     nextTitle: "Prochaine étape",
     nextDescription:
-      "La Phase 8 ajoutera les KPI, les filtres, les exports, la rétention et le suivi de conformité.",
+      "La Phase 9 durcira la production, les performances, l’observabilité et les parcours E2E.",
   },
   settings: {
     eyebrow: "Paramètres",

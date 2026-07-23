@@ -67,6 +67,30 @@ describe("organization permissions", () => {
       expect(can(role, "intelligence:run")).toBe(false);
     }
   });
+
+  it("matches the Phase 8 analytics and compliance matrix", () => {
+    for (const role of APP_ROLES) {
+      expect(can(role, "analytics:read")).toBe(true);
+    }
+    for (const role of ["admin", "direction", "sales_manager"] as const) {
+      expect(can(role, "analytics:export")).toBe(true);
+      expect(can(role, "compliance:read")).toBe(true);
+      expect(can(role, "audit:read")).toBe(true);
+    }
+    for (const role of ["sales", "venue_manager", "marketing", "viewer"] as const) {
+      expect(can(role, "analytics:export")).toBe(false);
+      expect(can(role, "compliance:read")).toBe(false);
+      expect(can(role, "audit:read")).toBe(false);
+    }
+    expect(can("admin", "compliance:write")).toBe(true);
+    expect(can("admin", "privacy:write")).toBe(true);
+    expect(can("admin", "retention:simulate")).toBe(true);
+    for (const role of APP_ROLES.filter((role) => role !== "admin")) {
+      expect(can(role, "compliance:write")).toBe(false);
+      expect(can(role, "privacy:write")).toBe(false);
+      expect(can(role, "retention:simulate")).toBe(false);
+    }
+  });
 });
 
 describe("role-aware navigation", () => {
@@ -91,5 +115,14 @@ describe("role-aware navigation", () => {
     const navigation = getVisibleNavigation("viewer");
     expect(navigation.find((item) => item.key === "explore")?.availableFromPhase).toBe(3);
     expect(navigation.find((item) => item.key === "companies")?.availableFromPhase).toBe(3);
+  });
+
+  it("makes analytics available to every role from Phase 8", () => {
+    for (const role of APP_ROLES) {
+      expect(getVisibleNavigation(role).find((item) => item.key === "analytics")).toMatchObject({
+        href: "/analytics",
+        availableFromPhase: 8,
+      });
+    }
   });
 });

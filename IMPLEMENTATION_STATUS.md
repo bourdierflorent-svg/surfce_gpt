@@ -14,17 +14,18 @@ racine. Aucun code métier antérieur n’a donc été supprimé ou remplacé.
 
 ## État actuel
 
-| Phase                                | État           | Résultat                                                                                                    |
-| ------------------------------------ | -------------- | ----------------------------------------------------------------------------------------------------------- |
-| Phase 0 — Audit et socle             | Implémentée    | Next.js App Router, TS strict, Tailwind, ESLint, Prettier, Vitest, structure, design system, login et shell |
-| Phase 1 — Auth, organisation et RLS  | Déployée       | Supabase SSR, profils, organisations, memberships, rôles, navigation filtrée, migrations, seed et tests RLS |
-| Phase 2 — Établissements et offres   | Déployée       | CRUD, offres, assets privés, galerie, validations, RLS et seed Stargazing                                   |
-| Phase 3 — Entreprises et Explorer    | Déployée       | MapLibre local, provider mock, import dédupliqué, sources, fiches, RLS et PostGIS                           |
-| Phase 4 — Enrichissement et matching | Déployée       | Providers mock, jobs, persona Zod, validation humaine, score explicable et recommandations                  |
-| Phase 5 — Contacts et campagnes mock | Déployée       | Contacts, vérification, séquences, validation, planification, envoi mock et suppression atomique            |
-| Phase 6 — Gmail/Microsoft et inbox   | Déployée       | OAuth, tokens chiffrés, sync, webhooks, fils, qualification, réponses et arrêt automatique                  |
-| Phase 7 — Opportunités et tâches     | Déployée       | Pipeline configurable, dossiers, tâches, rendez-vous, propositions, revenu pondéré et audit                 |
-| Phases 8 et 9                        | Non commencées | Analytics, conformité et durcissement restent hors de cette intervention                                    |
+| Phase                                | État          | Résultat                                                                                                    |
+| ------------------------------------ | ------------- | ----------------------------------------------------------------------------------------------------------- |
+| Phase 0 — Audit et socle             | Implémentée   | Next.js App Router, TS strict, Tailwind, ESLint, Prettier, Vitest, structure, design system, login et shell |
+| Phase 1 — Auth, organisation et RLS  | Déployée      | Supabase SSR, profils, organisations, memberships, rôles, navigation filtrée, migrations, seed et tests RLS |
+| Phase 2 — Établissements et offres   | Déployée      | CRUD, offres, assets privés, galerie, validations, RLS et seed Stargazing                                   |
+| Phase 3 — Entreprises et Explorer    | Déployée      | MapLibre local, provider mock, import dédupliqué, sources, fiches, RLS et PostGIS                           |
+| Phase 4 — Enrichissement et matching | Déployée      | Providers mock, jobs, persona Zod, validation humaine, score explicable et recommandations                  |
+| Phase 5 — Contacts et campagnes mock | Déployée      | Contacts, vérification, séquences, validation, planification, envoi mock et suppression atomique            |
+| Phase 6 — Gmail/Microsoft et inbox   | Déployée      | OAuth, tokens chiffrés, sync, webhooks, fils, qualification, réponses et arrêt automatique                  |
+| Phase 7 — Opportunités et tâches     | Déployée      | Pipeline configurable, dossiers, tâches, rendez-vous, propositions, revenu pondéré et audit                 |
+| Phase 8 — Analytics et conformité    | Déployée      | 17 KPI sourcés, filtres, exports audités, rétention, droits des personnes et journal d’audit                |
+| Phase 9 — Durcissement production    | Non commencée | Performance, observabilité, sécurité finale et parcours E2E restent hors de cette intervention              |
 
 ## Identité du produit
 
@@ -261,18 +262,65 @@ racine. Aucun code métier antérieur n’a donc été supprimé ou remplacé.
 - Performance Advisor sans clé étrangère non indexée ; les index neufs sans activité sont
   seulement signalés au niveau informationnel.
 
+## Livré en Phase 8
+
+- page `/analytics` conçue comme un « pupitre de preuve » avec une ligne de conversion
+  volume → passage → résultat, période et dénominateur visibles ;
+- dix dimensions de filtre en plus de la période : responsable, campagne, secteur, zone, lieu,
+  offre, source, taille, statut entreprise et étape ;
+- dix-sept mesures exigées : prospects, enrichissements, contacts, messages, délivrés, réponses,
+  réponses positives, rendez-vous, opportunités, propositions, gagnées, perdues, revenu signé,
+  revenu pondéré, coût par opportunité, délai de réponse et durée du cycle ;
+- calcul métier pur testé, mesures sourcées et définitions affichées dans l’interface ;
+- répartitions par étape, responsable, source et campagne, plus une vigie rebonds, échecs,
+  providers, boîtes et tâches en retard ;
+- export CSV limité à cinq colonnes non sensibles, protégé par rôle, empreinté en SHA-256 et
+  journalisé sans persister le fichier ;
+- quatre nouvelles tables RLS : `compliance_settings`, `analytics_exports`, `retention_runs` et
+  `privacy_requests` ;
+- huit politiques RLS dédiées, journal d’audit complet pour `admin`/`direction` et vue
+  opérationnelle limitée pour `sales_manager` ;
+- centre `/settings/compliance` pour la base légale, les durées de conservation, la simulation,
+  les diagnostics et les droits des personnes ;
+- preuve d’opposition obligatoire et non désactivable, tracking comportemental désactivé par
+  défaut et actions sensibles réservées à l’administrateur ;
+- export d’accès JSON sur liste blanche, sans tokens, en-têtes providers ni métadonnées secrètes ;
+- RPC atomique d’anonymisation/suppression : preuve d’opposition, arrêt des séquences, retrait des
+  relations, effacement des sources et du contenu personnel des messages ;
+- moteur de rétention avec rapport dry-run, anonymisation, purge selon chaque durée et conservation
+  de la preuve d’opposition ;
+- exécution réelle de rétention réservée au `service_role` via `/api/cron/retention`, protégée par
+  `CRON_SECRET` ; l’interface utilisateur ne peut lancer qu’une simulation ;
+- journal `/settings/audit` filtrable, sans réaffichage des valeurs personnelles ;
+- cinq migrations Phase 8 appliquées au projet Supabase distant ;
+- assertions distantes rollback-only réussies pour l’isolation, les rôles, l’audit limité,
+  l’export, la simulation, l’anonymisation, l’opposition et les privilèges RPC ;
+- données de démonstration distantes : une politique, un export métadonnées, une simulation et une
+  demande d’accès, sans fichier ni copie de donnée personnelle ;
+- schéma distant vérifié : 35 tables publiques, 35 avec RLS, 8 politiques Phase 8, `anon` bloqué et
+  exécution de rétention limitée au `service_role` ;
+- direction visuelle « pupitre de preuve / gouvernance calme » produite avec `frontend-design` ;
+- audit selon la version courante de `web-design-guidelines` : labels, focus, confirmation
+  destructive, annonces asynchrones, filtres URL, formats localisés et protection des changements
+  non enregistrés ;
+- Security Advisor : la nouvelle RPC de confidentialité est volontairement authentifiée et
+  revérifie le rôle `admin` et l’organisation ; la protection Auth des mots de passe compromis
+  reste à activer ;
+- Performance Advisor sans alerte non informationnelle ni clé étrangère non indexée ; les index
+  neufs sans activité restent seulement signalés au niveau informationnel.
+
 ## Vérifications
 
 | Commande                         | Résultat actuel                                                                 |
 | -------------------------------- | ------------------------------------------------------------------------------- |
 | `npm run lint`                   | Réussi — 0 erreur, 0 avertissement                                              |
 | `npm run typecheck`              | Réussi                                                                          |
-| `npm test`                       | Réussi — 17 fichiers, 131 tests                                                 |
+| `npm test`                       | Réussi — 19 fichiers, 148 tests                                                 |
 | `npm run format:check`           | Réussi                                                                          |
-| `npm run build`                  | Réussi — routes Phase 7 et précédentes générées avec Next.js 16.2.11            |
+| `npm run build`                  | Réussi — routes Phase 8 et précédentes générées avec Next.js 16.2.11            |
 | `npm run test:rls`               | Tenté — échec de connexion à PostgreSQL local, Docker/base locale indisponible  |
 | Assertions RLS distantes         | Réussi — isolation de deux organisations et permissions admin/viewer validées   |
-| Supabase Security Advisor        | `anon` bloqué ; 5 RPC authentifiées intentionnelles et protection Auth à régler |
+| Supabase Security Advisor        | `anon` bloqué ; 6 RPC authentifiées intentionnelles et protection Auth à régler |
 | Auth propriétaire distant        | Réussi — connexion par mot de passe et émission d’un jeton validées             |
 | Assertions RLS Phase 2           | Réussi — isolation, lecture viewer et écriture venue manager validées           |
 | Lecture RLS avec le compte admin | Réussi — 4 établissements visibles                                              |
@@ -292,6 +340,9 @@ racine. Aucun code métier antérieur n’a donc été supprimé ou remplacé.
 | Assertions RLS Phase 7           | Réussi — inbox, idempotence, rôles, jalon, revenu, activité et audit            |
 | Schéma distant Phase 7           | Réussi — 6 nouvelles tables RLS et 4 migrations                                 |
 | Données mock Phase 7             | Réussi — 5 opportunités, 5 tâches, 1 rendez-vous et 2 propositions              |
+| Assertions RLS Phase 8           | Réussi — rôles, audit, confidentialité, opposition et rétention rollback-only   |
+| Schéma distant Phase 8           | Réussi — 4 tables RLS, 8 politiques dédiées, 5 migrations et 0 FK non indexée   |
+| Données mock Phase 8             | Réussi — 1 politique, 1 export, 1 simulation et 1 demande d’accès               |
 
 Les invariants RLS sont aussi contrôlés par Vitest. Les scénarios distants ont été exécutés avec des
 utilisateurs fictifs dans des transactions ensuite annulées. Le test pgTAP local reste disponible
@@ -332,7 +383,7 @@ Variables optionnelles ou réservées aux autres providers :
 
 Les sélecteurs `AI_PROVIDER`, `COMPANY_REGISTRY_PROVIDER`, `CONTACT_VERIFICATION_PROVIDER` et
 `MAIL_PROVIDER` peuvent rester absents : le fallback serveur `mock` est explicite. Le scénario mock
-des Phases 6 et 7 reste utilisable sans appel externe ni coût.
+des Phases 6 à 8 reste utilisable sans appel externe ni coût.
 
 ## Écarts et risques
 
@@ -346,10 +397,11 @@ des Phases 6 et 7 reste utilisable sans appel externe ni coût.
    autorisations Graph et le callback webhook public.
 4. Supabase Auth signale que la protection contre les mots de passe compromis est désactivée. Ce
    réglage doit être activé avant la production depuis les paramètres Auth.
-5. Cinq RPC métier atomiques restent `SECURITY DEFINER` et exécutables par `authenticated` :
+5. Six RPC métier atomiques restent `SECURITY DEFINER` et exécutables par `authenticated` :
    inscription en campagne, opposition, association et classification d’un fil, ainsi que création
-   d’une opportunité depuis l’inbox. Elles bloquent `anon` et vérifient l’organisation et le rôle
-   en interne, mais restent signalées par le Security Advisor.
+   d’une opportunité depuis l’inbox et traitement d’une demande de confidentialité. Elles bloquent
+   `anon` et vérifient l’organisation et le rôle en interne, mais restent signalées par le Security
+   Advisor.
 6. `npm audit` signale trois vulnérabilités connues dans l’arbre de dépendances, dont une modérée et
    deux élevées. Aucun `npm audit fix --force` n’a été appliqué afin d’éviter une mise à niveau
    cassante non revue.
@@ -360,11 +412,11 @@ des Phases 6 et 7 reste utilisable sans appel externe ni coût.
 
 ## Plan des prochaines phases
 
-1. **Phase 8** — dashboard métier, analytics et conformité ;
-2. Phase 9 — durcissement production et E2E.
+1. **Phase 9** — durcissement production, performance, observabilité, sécurité et E2E.
 
 ## Prochaine phase
 
-**Phase 8 — Dashboard métier, analytics et conformité.** La prochaine intervention doit agréger le
-funnel, les conversions, les délais, la performance commerciale, la provenance et les contrôles de
-conformité à partir des données existantes, sans commencer le durcissement E2E de la Phase 9.
+**Phase 9 — Durcissement production et E2E.** La prochaine intervention doit mesurer et optimiser
+les requêtes, ajouter l’observabilité et les alertes, durcir les en-têtes et la sécurité, puis
+couvrir les parcours critiques en E2E. Aucun travail de Phase 9 n’a commencé dans cette
+intervention.

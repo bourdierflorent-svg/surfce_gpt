@@ -18,7 +18,13 @@ export type Permission =
   | "opportunities:write"
   | "tasks:write"
   | "messages:send"
+  | "analytics:read"
+  | "analytics:export"
+  | "compliance:read"
   | "compliance:write"
+  | "audit:read"
+  | "privacy:write"
+  | "retention:simulate"
   | "intelligence:run"
   | "venues:read"
   | "venues:write"
@@ -57,7 +63,13 @@ const permissionsByRole: Record<AppRole, readonly Permission[]> = {
     "opportunities:write",
     "tasks:write",
     "messages:send",
+    "analytics:read",
+    "analytics:export",
+    "compliance:read",
     "compliance:write",
+    "audit:read",
+    "privacy:write",
+    "retention:simulate",
     "intelligence:run",
     "venues:read",
     "venues:write",
@@ -71,6 +83,10 @@ const permissionsByRole: Record<AppRole, readonly Permission[]> = {
     "campaigns:read",
     "inbox:read",
     "opportunities:read",
+    "analytics:read",
+    "analytics:export",
+    "compliance:read",
+    "audit:read",
     "venues:read",
   ],
   sales_manager: [
@@ -89,7 +105,10 @@ const permissionsByRole: Record<AppRole, readonly Permission[]> = {
     "opportunities:write",
     "tasks:write",
     "messages:send",
-    "compliance:write",
+    "analytics:read",
+    "analytics:export",
+    "compliance:read",
+    "audit:read",
     "intelligence:run",
     "venues:read",
   ],
@@ -109,7 +128,7 @@ const permissionsByRole: Record<AppRole, readonly Permission[]> = {
     "opportunities:write",
     "tasks:write",
     "messages:send",
-    "compliance:write",
+    "analytics:read",
     "intelligence:run",
     "venues:read",
   ],
@@ -121,6 +140,7 @@ const permissionsByRole: Record<AppRole, readonly Permission[]> = {
     "campaigns:read",
     "inbox:read",
     "opportunities:read",
+    "analytics:read",
     "venues:read",
     "venues:write",
     "venue-assets:write",
@@ -136,6 +156,7 @@ const permissionsByRole: Record<AppRole, readonly Permission[]> = {
     "inbox:read",
     "opportunities:read",
     "messages:send",
+    "analytics:read",
     "venues:read",
     "venues:write",
     "venue-assets:write",
@@ -148,6 +169,7 @@ const permissionsByRole: Record<AppRole, readonly Permission[]> = {
     "campaigns:read",
     "inbox:read",
     "opportunities:read",
+    "analytics:read",
     "venues:read",
   ],
 };

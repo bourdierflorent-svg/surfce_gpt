@@ -4,11 +4,11 @@ SURFCE est un outil indépendant de prospection B2B et de CRM événementiel, co
 son propriétaire. Stargazing constitue son premier cas d’usage métier, sans définir la marque ni
 la direction artistique de SURFCE.
 
-Le dépôt couvre actuellement les **Phases 0 à 7** du cahier des charges : socle Next.js,
+Le dépôt couvre actuellement les **Phases 0 à 8** du cahier des charges : socle Next.js,
 authentification Supabase SSR, organisations et rôles, registre des établissements, Explorer,
-entreprises, enrichissement mock, personas, matching, contacts, campagnes, inbox connectable et
-pipeline d’opportunités. Google Workspace et Microsoft 365 restent fermés tant que leurs secrets
-OAuth ne sont pas configurés.
+entreprises, enrichissement mock, personas, matching, contacts, campagnes, inbox connectable,
+pipeline d’opportunités, analytics et conformité. Google Workspace et Microsoft 365 restent
+fermés tant que leurs secrets OAuth ne sont pas configurés.
 
 ## Prérequis
 
@@ -36,7 +36,7 @@ Ouvrir ensuite `http://localhost:3000/login`.
 
 ## Variables d’environnement
 
-### Configuration publique des Phases 1 à 7
+### Configuration publique des Phases 1 à 8
 
 | Variable                        | Exposition | Usage                               |
 | ------------------------------- | ---------- | ----------------------------------- |
@@ -54,7 +54,7 @@ obligatoire pour les callbacks OAuth et les webhooks Microsoft.
 | `SUPABASE_SERVICE_ROLE_KEY` |           6 | Synchronisation et cron serveur, jamais dans le client |
 | `SUPABASE_DATABASE_URL`     | Déploiement | Migrations automatisées                                |
 | `APP_ENCRYPTION_KEY`        |           6 | AES-256-GCM des tokens OAuth                           |
-| `CRON_SECRET`               |          5+ | Protection des trois routes planifiées                 |
+| `CRON_SECRET`               |          5+ | Protection des quatre routes planifiées                |
 
 Toutes les autres variables sont décrites dans `.env.example`. La carte Phase 3 utilise un style
 vectoriel local. Les Phases 4 et 5 utilisent `AI_PROVIDER=mock`,
@@ -122,24 +122,30 @@ Routes actuellement disponibles :
 - `/opportunities/new` ;
 - `/opportunities/[opportunityId]` ;
 - `/opportunities/stages` ;
+- `/analytics` ;
 - `/settings/mailboxes` ;
+- `/settings/compliance` ;
+- `/settings/audit` ;
 - `/api/discovery/search`, `/import`, `/import-batch`, `/deduplicate` et `/saved` ;
 - `/api/companies/[id]/enrich`, `/verify`, `/persona` et `/match-venues`.
 - `/api/contacts/[id]/verify-email` et `/suppress` ;
 - `/api/campaigns`, puis `/api/campaigns/[id]/enroll`, `/unenroll`, `/preview`, `/approve`,
   `/launch` et `/pause` ;
 - `/api/messages/generate`, `/send-test` et `/send` ;
-- `/api/mailboxes/[provider]/connect`, `/api/oauth/[provider]/callback`, synchronisation et
+- `/api/mailboxes/connect/[provider]`, `/api/oauth/[provider]/callback`, synchronisation et
   déconnexion ;
 - `/api/threads/[id]/summarize`, `/draft-reply`, `/reply`, `/associate` et `/read` ;
 - `/api/threads/[id]/opportunity` ;
 - `/api/opportunities`, puis `/api/opportunities/[id]`, `/stage`, `/tasks`, `/appointments` et
   `/proposals` ;
 - `/api/tasks/[id]/status`, `/api/proposals/[id]/status` et `/api/opportunity-stages/[id]` ;
+- `/api/analytics/export` ;
+- `/api/compliance/settings`, `/retention/simulate`, `/privacy` et
+  `/contacts/[contactId]/export` ;
 - `/api/messages/[id]/classify` ;
 - `/api/webhooks/google/mail`, `/microsoft/mail` et `/provider/[provider]` ;
-- `/api/cron/process-campaigns`, `/sync-mailboxes` et `/refresh-mail-watches`, fermées tant que
-  `CRON_SECRET` n’est pas configuré.
+- `/api/cron/process-campaigns`, `/sync-mailboxes`, `/refresh-mail-watches` et `/retention`,
+  fermées tant que `CRON_SECRET` n’est pas configuré.
 
 ## Établissements, offres et galerie
 
@@ -250,6 +256,24 @@ La Phase 7 livre :
 
 Le seed ajoute cinq dossiers entièrement fictifs. Le pipeline de démonstration contient 30 445 €
 pondérés en cours et 7 600 € gagnés.
+
+## Analytics et conformité
+
+La Phase 8 livre :
+
+- 17 indicateurs sourcés, une ligne de conversion avec dénominateurs et 11 dimensions de lecture ;
+- des répartitions du pipeline et une vigie opérationnelle ;
+- un export CSV sur liste blanche, limité par rôle, empreinté et audité ;
+- une politique de conservation par organisation et une simulation sans mutation ;
+- une preuve d’opposition obligatoire, le tracking désactivé par défaut et une exécution de
+  rétention réservée au `service_role` ;
+- l’export d’accès JSON, l’anonymisation et la suppression logique des données personnelles ;
+- l’arrêt des séquences et le retrait du contenu personnel des messages lors d’une demande ;
+- un journal d’audit filtrable, complet pour `admin`/`direction` et limité pour
+  `sales_manager`.
+
+La route `/api/cron/retention` exige `CRON_SECRET` et `SUPABASE_SERVICE_ROLE_KEY`. Aucune action
+destructive de rétention n’est accessible depuis le navigateur.
 
 ## Qualité et tests
 

@@ -59,6 +59,15 @@ export default async function OrganizationSettingsPage() {
           {fr.settings.mailboxesLink}
           <ArrowRight className="size-4" aria-hidden="true" />
         </Link>
+        {["admin", "direction", "sales_manager"].includes(context.membership.role) ? (
+          <Link
+            href="/settings/compliance"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            Conformité et rétention
+            <ArrowRight className="size-4" aria-hidden="true" />
+          </Link>
+        ) : null}
       </div>
     </div>
   );

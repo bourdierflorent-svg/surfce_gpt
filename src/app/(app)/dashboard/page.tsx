@@ -87,7 +87,7 @@ export default async function DashboardPage() {
         <Card className="border-primary/20 bg-primary text-primary-foreground">
           <CardHeader>
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary-foreground/65">
-              {fr.common.phase} 8
+              {fr.common.phase} 9
             </p>
             <CardTitle className="text-xl">{fr.dashboard.nextTitle}</CardTitle>
           </CardHeader>

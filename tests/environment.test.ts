@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 
 import { readSupabasePublicConfig } from "@/lib/supabase/env";
 
@@ -27,5 +29,16 @@ describe("Supabase public environment", () => {
         NEXT_PUBLIC_SUPABASE_ANON_KEY: "public-anon-key",
       }),
     ).toBeNull();
+  });
+});
+
+describe("Next.js route topology", () => {
+  it("keeps mailbox provider and mailbox id parameters on distinct segments", () => {
+    expect(
+      existsSync(join(process.cwd(), "src/app/api/mailboxes/connect/[provider]/route.ts")),
+    ).toBe(true);
+    expect(
+      existsSync(join(process.cwd(), "src/app/api/mailboxes/[provider]/connect/route.ts")),
+    ).toBe(false);
   });
 });

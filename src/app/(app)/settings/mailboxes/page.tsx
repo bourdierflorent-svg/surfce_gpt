@@ -130,7 +130,7 @@ export default async function MailboxesSettingsPage({ searchParams }: MailboxesS
             <div className="mt-6">
               {provider.ready && writable ? (
                 <Link
-                  href={`/api/mailboxes/${provider.id}/connect`}
+                  href={`/api/mailboxes/connect/${provider.id}`}
                   className="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
                   Connecter {provider.name}

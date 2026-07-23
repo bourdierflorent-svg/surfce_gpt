@@ -2074,3 +2074,114 @@ end;
 $phase7$;
 
 select pg_temp.seed_phase7_demo();
+
+create or replace function pg_temp.seed_phase8_demo()
+returns void
+language plpgsql
+as $phase8$
+declare
+  owner_user_id uuid;
+begin
+  select user_id
+  into owner_user_id
+  from public.memberships
+  where organization_id = '10000000-0000-0000-0000-000000000001'
+    and role = 'admin'
+    and is_active
+  order by created_at
+  limit 1;
+
+  if owner_user_id is null then
+    raise exception 'Phase 8 seed requires the SURFCE administrator';
+  end if;
+
+  update public.compliance_settings
+  set
+    default_lawful_basis = 'legitimate_interest',
+    contact_retention_days = 730,
+    message_retention_days = 365,
+    provider_log_retention_days = 180,
+    audit_retention_days = 2190,
+    anonymize_inactive_contacts = true,
+    retain_suppression_proof = true,
+    tracking_enabled = false,
+    updated_by = owner_user_id
+  where organization_id = '10000000-0000-0000-0000-000000000001';
+
+  insert into public.analytics_exports (
+    id,
+    organization_id,
+    requested_by,
+    export_type,
+    format,
+    filters,
+    columns,
+    row_count,
+    status,
+    checksum
+  )
+  values (
+    '89000000-0000-0000-0000-000000000001',
+    '10000000-0000-0000-0000-000000000001',
+    owner_user_id,
+    'analytics_overview',
+    'csv',
+    '{"period":"phase8_demo"}'::jsonb,
+    array['indicateur', 'valeur', 'unite', 'definition', 'source'],
+    17,
+    'completed',
+    repeat('a', 64)
+  )
+  on conflict (id) do nothing;
+
+  insert into public.retention_runs (
+    id,
+    organization_id,
+    requested_by,
+    mode,
+    status,
+    settings_snapshot,
+    report,
+    started_at,
+    completed_at
+  )
+  values (
+    '88000000-0000-0000-0000-000000000001',
+    '10000000-0000-0000-0000-000000000001',
+    owner_user_id,
+    'simulation',
+    'completed',
+    '{"contact_retention_days":730,"message_retention_days":365,"provider_log_retention_days":180,"audit_retention_days":2190,"tracking_enabled":false}'::jsonb,
+    '{"contacts":0,"messages":0,"provider_jobs":0,"audit_logs":0,"dry_run":true}'::jsonb,
+    now(),
+    now()
+  )
+  on conflict (id) do nothing;
+
+  insert into public.privacy_requests (
+    id,
+    organization_id,
+    contact_id,
+    requested_by,
+    request_type,
+    status,
+    reason,
+    result,
+    completed_at
+  )
+  values (
+    '87000000-0000-0000-0000-000000000001',
+    '10000000-0000-0000-0000-000000000001',
+    '70000000-0000-0000-0000-000000000001',
+    owner_user_id,
+    'access',
+    'completed',
+    'Démonstration fictive de la traçabilité Phase 8',
+    '{"exported_sections":["contact","company","sources","campaign_enrollments","conversations"]}'::jsonb,
+    now()
+  )
+  on conflict (id) do nothing;
+end;
+$phase8$;
+
+select pg_temp.seed_phase8_demo();
