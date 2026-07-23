@@ -193,6 +193,233 @@ export interface AiRunRow extends Record<string, unknown> {
   completed_at: string | null;
 }
 
+export type ContactStatus =
+  "to_verify" | "valid" | "risky" | "invalid" | "left_company" | "wrong_person" | "do_not_contact";
+
+export interface ContactRow extends Record<string, unknown> {
+  id: string;
+  organization_id: string;
+  company_id: string;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+  job_title: string | null;
+  department: string | null;
+  email: string | null;
+  normalized_email: string | null;
+  email_status: "unverified" | "valid" | "risky" | "invalid";
+  phone: string | null;
+  linkedin_url: string | null;
+  contact_status: ContactStatus;
+  confidence: number;
+  lawful_basis: string | null;
+  do_not_contact: boolean;
+  do_not_contact_reason: string | null;
+  assigned_to: string | null;
+  last_contacted_at: string | null;
+  last_replied_at: string | null;
+  tags: string[];
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface MailboxRow extends Record<string, unknown> {
+  id: string;
+  organization_id: string;
+  user_id: string;
+  provider: "mock" | "google" | "microsoft";
+  provider_account_id: string;
+  email_address: string;
+  display_name: string;
+  encrypted_access_token: string | null;
+  encrypted_refresh_token: string | null;
+  token_expires_at: string | null;
+  sync_cursor: string | null;
+  watch_expires_at: string | null;
+  status: "connected" | "disconnected" | "error";
+  daily_send_limit: number;
+  sent_today: number;
+  last_sync_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type CampaignStatus =
+  | "draft"
+  | "pending_approval"
+  | "approved"
+  | "scheduled"
+  | "active"
+  | "paused"
+  | "completed"
+  | "cancelled";
+
+export type EnrollmentStatus =
+  | "draft"
+  | "pending_approval"
+  | "scheduled"
+  | "active"
+  | "replied"
+  | "interested"
+  | "not_interested"
+  | "unsubscribed"
+  | "bounced"
+  | "paused"
+  | "completed"
+  | "stopped";
+
+export interface CampaignRow extends Record<string, unknown> {
+  id: string;
+  organization_id: string;
+  name: string;
+  description: string | null;
+  status: CampaignStatus;
+  venue_id: string | null;
+  offer_id: string | null;
+  mailbox_id: string;
+  segment_definition: Json;
+  language: string;
+  tone: string;
+  daily_limit: number;
+  send_window: Json;
+  stop_rules: Json;
+  requires_first_message_approval: boolean;
+  created_by: string;
+  approved_by: string | null;
+  approved_at: string | null;
+  launched_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SequenceStepRow extends Record<string, unknown> {
+  id: string;
+  organization_id: string;
+  campaign_id: string;
+  position: number;
+  delay_days: number;
+  delay_hours: number;
+  step_type: "email";
+  subject_template: string | null;
+  body_template_text: string | null;
+  body_template_html: string | null;
+  ai_instructions: string | null;
+  requires_approval: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CampaignEnrollmentRow extends Record<string, unknown> {
+  id: string;
+  organization_id: string;
+  campaign_id: string;
+  company_id: string;
+  contact_id: string;
+  status: EnrollmentStatus;
+  current_step: number;
+  next_send_at: string | null;
+  last_sent_at: string | null;
+  stopped_at: string | null;
+  stop_reason: string | null;
+  personalization_snapshot: Json;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MailThreadRow extends Record<string, unknown> {
+  id: string;
+  organization_id: string;
+  mailbox_id: string;
+  provider_thread_id: string;
+  company_id: string | null;
+  contact_id: string | null;
+  campaign_id: string | null;
+  subject: string | null;
+  classification: string | null;
+  priority: "low" | "normal" | "high";
+  summary: string | null;
+  last_message_at: string | null;
+  last_inbound_at: string | null;
+  is_unread: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MessageRow extends Record<string, unknown> {
+  id: string;
+  organization_id: string;
+  thread_id: string | null;
+  campaign_id: string | null;
+  enrollment_id: string | null;
+  sequence_step_id: string | null;
+  provider_message_id: string | null;
+  deduplication_key: string;
+  direction: "outbound" | "inbound";
+  sender: Json;
+  recipients: Json;
+  cc: Json;
+  bcc: Json;
+  subject: string;
+  body_text: string;
+  body_html: string;
+  variant_label: string | null;
+  personalization_facts: Json;
+  risk_flags: Json;
+  scheduled_at: string | null;
+  sent_at: string | null;
+  received_at: string | null;
+  status:
+    | "draft"
+    | "pending_approval"
+    | "approved"
+    | "scheduled"
+    | "processing"
+    | "sent_mock"
+    | "failed"
+    | "cancelled";
+  approved_by: string | null;
+  approved_at: string | null;
+  error_code: string | null;
+  error_message: string | null;
+  classification: string | null;
+  ai_summary: Json;
+  headers: Json;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SuppressionRow extends Record<string, unknown> {
+  id: string;
+  organization_id: string;
+  email: string;
+  normalized_email: string;
+  domain: string | null;
+  company_id: string | null;
+  contact_id: string | null;
+  reason: string;
+  source: string;
+  suppressed_at: string;
+  expires_at: string | null;
+  metadata: Json;
+  created_at: string;
+}
+
+export interface AuditLogRow extends Record<string, unknown> {
+  id: string;
+  organization_id: string;
+  actor_user_id: string | null;
+  action: string;
+  entity_type: string;
+  entity_id: string | null;
+  before: Json;
+  after: Json;
+  ip_hash: string | null;
+  user_agent: string | null;
+  created_at: string;
+}
+
 export interface Database {
   __InternalSupabase: {
     PostgrestVersion: "14.5";
@@ -216,11 +443,45 @@ export interface Database {
         Update: Partial<AiRunRow>;
         Relationships: [];
       };
+      audit_logs: {
+        Row: AuditLogRow;
+        Insert: Partial<AuditLogRow> &
+          Pick<AuditLogRow, "organization_id" | "action" | "entity_type">;
+        Update: Partial<AuditLogRow>;
+        Relationships: [];
+      };
+      campaign_enrollments: {
+        Row: CampaignEnrollmentRow;
+        Insert: Partial<CampaignEnrollmentRow> &
+          Pick<
+            CampaignEnrollmentRow,
+            "organization_id" | "campaign_id" | "company_id" | "contact_id"
+          >;
+        Update: Partial<CampaignEnrollmentRow>;
+        Relationships: [];
+      };
+      campaigns: {
+        Row: CampaignRow;
+        Insert: Partial<CampaignRow> &
+          Pick<CampaignRow, "organization_id" | "name" | "mailbox_id" | "created_by">;
+        Update: Partial<CampaignRow>;
+        Relationships: [];
+      };
       companies: {
         Row: CompanyRow;
         Insert: Partial<CompanyRow> &
           Pick<CompanyRow, "organization_id" | "legal_name" | "normalized_name">;
         Update: Partial<CompanyRow>;
+        Relationships: [];
+      };
+      contacts: {
+        Row: ContactRow;
+        Insert: Partial<ContactRow> &
+          Pick<
+            ContactRow,
+            "organization_id" | "company_id" | "first_name" | "last_name" | "full_name"
+          >;
+        Update: Partial<ContactRow>;
         Relationships: [];
       };
       company_locations: {
@@ -304,6 +565,38 @@ export interface Database {
         Update: Partial<SavedSearchRow>;
         Relationships: [];
       };
+      mail_threads: {
+        Row: MailThreadRow;
+        Insert: Partial<MailThreadRow> &
+          Pick<MailThreadRow, "organization_id" | "mailbox_id" | "provider_thread_id">;
+        Update: Partial<MailThreadRow>;
+        Relationships: [];
+      };
+      mailboxes: {
+        Row: MailboxRow;
+        Insert: Partial<MailboxRow> &
+          Pick<
+            MailboxRow,
+            | "organization_id"
+            | "user_id"
+            | "provider"
+            | "provider_account_id"
+            | "email_address"
+            | "display_name"
+          >;
+        Update: Partial<MailboxRow>;
+        Relationships: [];
+      };
+      messages: {
+        Row: MessageRow;
+        Insert: Partial<MessageRow> &
+          Pick<
+            MessageRow,
+            "organization_id" | "deduplication_key" | "subject" | "body_text" | "body_html"
+          >;
+        Update: Partial<MessageRow>;
+        Relationships: [];
+      };
       memberships: {
         Row: {
           id: string;
@@ -372,6 +665,23 @@ export interface Database {
             "organization_id" | "idempotency_key" | "job_type" | "provider" | "entity_type"
           >;
         Update: Partial<ProviderJobRow>;
+        Relationships: [];
+      };
+      sequence_steps: {
+        Row: SequenceStepRow;
+        Insert: Partial<SequenceStepRow> &
+          Pick<SequenceStepRow, "organization_id" | "campaign_id" | "position">;
+        Update: Partial<SequenceStepRow>;
+        Relationships: [];
+      };
+      suppression_list: {
+        Row: SuppressionRow;
+        Insert: Partial<SuppressionRow> &
+          Pick<
+            SuppressionRow,
+            "organization_id" | "email" | "normalized_email" | "reason" | "source"
+          >;
+        Update: Partial<SuppressionRow>;
         Relationships: [];
       };
       venue_assets: {
@@ -658,9 +968,17 @@ export interface Database {
         Args: { p_name: string; p_slug: string };
         Returns: string;
       };
+      enroll_contact_in_campaign: {
+        Args: { p_campaign_id: string; p_contact_id: string };
+        Returns: Json;
+      };
       import_discovered_company: {
         Args: { p_organization_id: string; p_company: Json };
         Returns: { company_id: string; was_created: boolean; match_reason: string }[];
+      };
+      process_mock_campaign_message: {
+        Args: { p_message_id: string; p_provider_message_id: string };
+        Returns: Json;
       };
       search_companies_in_polygon: {
         Args: { p_organization_id: string; p_geojson: Json };
@@ -675,6 +993,10 @@ export interface Database {
         };
         Returns: CompanyRow[];
       };
+      suppress_contact: {
+        Args: { p_contact_id: string; p_reason: string; p_source?: string };
+        Returns: Json;
+      };
     };
     Enums: {
       app_role:
@@ -686,6 +1008,8 @@ export interface Database {
         | "marketing"
         | "viewer";
       company_status: CompanyStatus;
+      campaign_status: CampaignStatus;
+      enrollment_status: EnrollmentStatus;
     };
     CompositeTypes: Record<never, never>;
   };

@@ -44,13 +44,22 @@ export default async function OrganizationSettingsPage() {
         </CardContent>
       </Card>
 
-      <Link
-        href="/settings/members"
-        className="inline-flex items-center gap-2 text-sm font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        {fr.settings.membersLink}
-        <ArrowRight className="size-4" aria-hidden="true" />
-      </Link>
+      <div className="flex flex-wrap gap-5">
+        <Link
+          href="/settings/members"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          {fr.settings.membersLink}
+          <ArrowRight className="size-4" aria-hidden="true" />
+        </Link>
+        <Link
+          href="/settings/mailboxes"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          {fr.settings.mailboxesLink}
+          <ArrowRight className="size-4" aria-hidden="true" />
+        </Link>
+      </div>
     </div>
   );
 }

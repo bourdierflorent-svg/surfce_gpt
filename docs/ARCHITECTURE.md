@@ -1,4 +1,4 @@
-# Architecture SURFCE — Phases 0 à 4
+# Architecture SURFCE — Phases 0 à 5
 
 ## Principes
 
@@ -24,9 +24,14 @@ src/features/discovery/          Recherche, import, déduplication et sauvegarde
 src/features/enrichment/         Accès, jobs et orchestration d’enrichissement
 src/features/personas/           Schéma Zod, génération, version et validation
 src/features/matching/           Scoring déterministe, justification et sélection
+src/features/contacts/           Répertoire, vérification et opposition
+src/features/campaigns/          Séquences, approbation et planification
+src/features/messages/           Génération, test et traitement mock
 src/providers/places/            Contrat provider et implémentation mock
 src/providers/registries/        Contrat registre et implémentation mock
 src/providers/enrichment/        Contrat analyse website et implémentation mock
+src/providers/contacts/          Contrat vérification e-mail et mock
+src/providers/mail/              Contrat d’expédition et mock déterministe
 src/providers/ai/                Contrat IA et implémentation déterministe mock
 src/components/map/              Rendu MapLibre et couches GeoJSON locales
 src/components/forms/            Associations accessibles entre labels, aides et erreurs
@@ -39,7 +44,7 @@ supabase/tests/                  Tests pgTAP exécutés contre PostgreSQL
 tests/                           Tests unitaires et invariants statiques
 ```
 
-Les quatre familles de providers livrées utilisent uniquement des mocks sans réseau. Les providers
+Les six familles de providers livrées utilisent uniquement des mocks sans réseau. Les providers
 réels et `src/emails` restent réservés aux phases autorisées ultérieurement.
 
 ## Flux d’authentification
@@ -81,6 +86,10 @@ et `viewer`.
 - `sales` peut importer puis gérer uniquement les entreprises qui lui sont attribuées ;
 - les mêmes trois rôles commerciaux peuvent lancer les traitements Phase 4, avec la même limite
   d’attribution pour `sales` ;
+- `admin` et `sales_manager` gèrent tous les contacts et toutes les campagnes ;
+- `sales` agit uniquement sur les contacts, entreprises, boîtes et campagnes qui lui sont
+  attribués ou qu’il a créés ;
+- `marketing` peut préparer les campagnes mais ne contourne jamais les contrôles d’opposition ;
 - les autres rôles peuvent les consulter sans écrire.
 
 La navigation filtre les entrées non pertinentes au rôle. Les routes futures restent visibles mais
@@ -89,7 +98,7 @@ inachevée.
 
 ## RLS
 
-Les quatorze tables des Phases 1 à 4 ont RLS activée. Les fonctions privées `is_org_member`,
+Les vingt-trois tables des Phases 1 à 5 ont RLS activée. Les fonctions privées `is_org_member`,
 `has_org_role` et `shares_org_with` utilisent `security definer` et un `search_path` vide pour
 éviter la récursion des politiques et le détournement de résolution de noms. Elles vivent dans le
 schéma non exposé `private` ; seuls des wrappers `security invoker` contrôlés sont publiés.
@@ -210,6 +219,67 @@ minimisé des entrées, sortie, statut et usage. Aucun secret ni historique inut
 Les clés client sont préfixées par le type de job et l’entreprise. Une même clé ne peut donc pas
 réutiliser par erreur la sortie d’un autre traitement.
 
+## Modèle Phase 5
+
+### `contacts`
+
+Répertoire professionnel rattaché à une entreprise : identité, fonction, adresse normalisée, statut
+de vérification, confiance, affectation, base légale et opposition. L’unicité partielle de
+l’adresse normalisée est limitée à l’organisation.
+
+### `mailboxes`
+
+Identité d’expéditeur, provider, état de connexion et limite quotidienne. La Phase 5 n’écrit aucun
+token : le provider `mock` conserve seulement un identifiant de compte déterministe.
+
+### `campaigns` et `sequence_steps`
+
+Une campagne relie un expéditeur, un segment manuel, un éventuel lieu et une offre. Elle stocke la
+langue, le ton, la limite quotidienne, la fenêtre d’envoi, les règles d’arrêt et l’approbation. Les
+étapes portent une position unique, un délai en jours/heures, des instructions et un drapeau
+d’approbation.
+
+### `campaign_enrollments`
+
+Inscription unique d’un contact dans une campagne avec état, étape courante, prochain envoi,
+instant d’arrêt et snapshot de personnalisation. La RPC `enroll_contact_in_campaign` verrouille les
+ressources et bloque toute inscription concernée par une opposition active.
+
+### `mail_threads` et `messages`
+
+Les fils regroupent les échanges par boîte et identifiant provider. Les messages conservent
+expéditeur, destinataires, contenu, variante, faits, risques, planning, validation et état. La clé
+de déduplication unique par organisation empêche la création de deux livraisons logiques.
+
+### `suppression_list`
+
+Registre d’opposition au niveau e-mail, contact, société ou domaine. La RPC `suppress_contact`
+insère l’opposition, marque le contact, arrête ses inscriptions et annule les messages non envoyés
+dans une même transaction.
+
+### `audit_logs`
+
+Journal minimal des actions sensibles de campagne et de conformité avec acteur, cible, action,
+avant/après et métadonnées.
+
+## Flux de campagne Phase 5
+
+1. l’utilisateur crée un brouillon avec une boîte mock et quatre étapes ;
+2. la RPC d’inscription valide l’adresse, l’organisation, le rôle et la suppression ;
+3. `MockAiProvider` génère exactement trois variantes à partir des seules sources vérifiées ;
+4. Zod valide le contenu, les références et la phrase d’opposition avant écriture ;
+5. le premier message reste `pending_approval` jusqu’au feu vert humain ;
+6. le lancement applique la fenêtre `Europe/Paris`, les jours ouvrés, les délais et un jitter
+   déterministe ;
+7. `MockMailProvider` prépare des identifiants stables sans trafic réseau ;
+8. `process_mock_campaign_message` reverrouille message, inscription et boîte, recontrôle la
+   suppression et inscrit l’envoi une seule fois ;
+9. toute deuxième tentative renvoie le résultat existant sans incrémenter le compteur d’envoi.
+
+Les RPC Phase 5 sont `SECURITY DEFINER` pour garder ces mutations atomiques. Elles révoquent
+explicitement `anon`, n’accordent `EXECUTE` qu’à `authenticated` et vérifient le membership, le
+rôle et l’organisation à l’intérieur de la transaction.
+
 ## Design system et direction Phases 2 et 3
 
 Le thème lumineux utilise des tokens CSS sémantiques : fond, carte, premier plan, primaire, muted,
@@ -237,9 +307,15 @@ La Phase 4 adopte le « dossier d’hypothèses » : une bande sombre relie regi
 décision. Les preuves, incertitudes et composantes du score restent visibles ; aucun halo violet,
 chatbot ou symbole d’IA magique ne remplace le raisonnement métier.
 
+La Phase 5 adopte le « bureau d’expédition contrôlé » : un rail sombre relie preuves, variantes,
+validation et expédition simulée. Les vues Contacts prennent la forme d’un registre lisible et les
+campagnes restent des manifestes à faible volume, sans reproduire un client mail ni un tableau
+Kanban générique.
+
 ## Décisions différées
 
 - implémentations réelles SIRENE, website, Hunter, Dropcontact et OpenAI : après configuration et
   validation de leurs conditions d’usage ;
-- contacts, campagnes et mail mock : Phase 5 ;
-- OAuth Gmail/Microsoft : Phase 6.
+- OAuth Gmail/Microsoft, tokens chiffrés, synchronisation, webhooks et inbox : Phase 6 ;
+- exécution autonome du cron de production : après configuration de `CRON_SECRET`, du contexte
+  serveur et de l’URL publique.

@@ -7,6 +7,12 @@ export type Permission =
   | "members:write"
   | "companies:read"
   | "companies:write"
+  | "contacts:read"
+  | "contacts:write"
+  | "campaigns:read"
+  | "campaigns:write"
+  | "messages:send"
+  | "compliance:write"
   | "intelligence:run"
   | "venues:read"
   | "venues:write"
@@ -34,17 +40,36 @@ const permissionsByRole: Record<AppRole, readonly Permission[]> = {
     "members:write",
     "companies:read",
     "companies:write",
+    "contacts:read",
+    "contacts:write",
+    "campaigns:read",
+    "campaigns:write",
+    "messages:send",
+    "compliance:write",
     "intelligence:run",
     "venues:read",
     "venues:write",
     "venue-assets:write",
   ],
-  direction: ["organization:read", "members:read", "companies:read", "venues:read"],
+  direction: [
+    "organization:read",
+    "members:read",
+    "companies:read",
+    "contacts:read",
+    "campaigns:read",
+    "venues:read",
+  ],
   sales_manager: [
     "organization:read",
     "members:read",
     "companies:read",
     "companies:write",
+    "contacts:read",
+    "contacts:write",
+    "campaigns:read",
+    "campaigns:write",
+    "messages:send",
+    "compliance:write",
     "intelligence:run",
     "venues:read",
   ],
@@ -53,6 +78,12 @@ const permissionsByRole: Record<AppRole, readonly Permission[]> = {
     "members:read",
     "companies:read",
     "companies:write",
+    "contacts:read",
+    "contacts:write",
+    "campaigns:read",
+    "campaigns:write",
+    "messages:send",
+    "compliance:write",
     "intelligence:run",
     "venues:read",
   ],
@@ -60,6 +91,8 @@ const permissionsByRole: Record<AppRole, readonly Permission[]> = {
     "organization:read",
     "members:read",
     "companies:read",
+    "contacts:read",
+    "campaigns:read",
     "venues:read",
     "venues:write",
     "venue-assets:write",
@@ -68,11 +101,22 @@ const permissionsByRole: Record<AppRole, readonly Permission[]> = {
     "organization:read",
     "members:read",
     "companies:read",
+    "contacts:read",
+    "campaigns:read",
+    "campaigns:write",
+    "messages:send",
     "venues:read",
     "venues:write",
     "venue-assets:write",
   ],
-  viewer: ["organization:read", "members:read", "companies:read", "venues:read"],
+  viewer: [
+    "organization:read",
+    "members:read",
+    "companies:read",
+    "contacts:read",
+    "campaigns:read",
+    "venues:read",
+  ],
 };
 
 export interface NavigationPolicy {

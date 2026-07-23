@@ -1,11 +1,60 @@
 import { personaOutputSchema, type PersonaOutput } from "@/features/personas/schemas";
+import { emailGenerationOutputSchema } from "@/features/messages/schemas";
 
 import type {
   AiProvider,
+  EmailGenerationInput,
   PersonaGenerationInput,
   VenueRationale,
   VenueRationaleInput,
 } from "./types";
+
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function emailBody(
+  input: EmailGenerationInput,
+  style: "direct" | "premium" | "relational",
+): string {
+  const greeting = input.contactFirstName ? `Bonjour ${input.contactFirstName},` : "Bonjour,";
+  const offer = input.offerName ?? "un format événementiel adapté à vos équipes";
+  const venue = input.venueName ? ` chez ${input.venueName}` : "";
+  const verifiedContext = input.verifiedFacts[0]?.fact;
+  const context = verifiedContext ? `${verifiedContext} ` : "";
+  const opening =
+    style === "direct"
+      ? `${context}Je vous contacte avec une proposition simple : ${offer}${venue}.`
+      : style === "premium"
+        ? `${context}Nous avons imaginé une piste événementielle sobre et soignée autour de ${offer}${venue}.`
+        : `${context}Je souhaitais vous soumettre une idée qui pourrait être utile à votre équipe : ${offer}${venue}.`;
+  const followUp =
+    input.stepPosition > 0
+      ? "Je me permets une relance courte au cas où ce sujet soit d’actualité."
+      : "";
+
+  return [
+    greeting,
+    "",
+    followUp,
+    opening,
+    "",
+    "Souhaitez-vous que je vous envoie les grandes lignes, ou préférez-vous un échange de 10 minutes ?",
+    "",
+    `Bien à vous,`,
+    input.senderName,
+    "",
+    "Si ce sujet n’est pas pertinent, dites-le-moi et je ne vous recontacterai pas.",
+  ]
+    .filter((line, index, lines) => line || lines[index - 1] !== "")
+    .join("\n")
+    .trim();
+}
 
 interface PersonaProfile {
   needs: PersonaOutput["probable_needs"];
@@ -140,5 +189,60 @@ export class MockAiProvider implements AiProvider {
       risks: input.risks,
       recommendedPitch: `${input.offerName} chez ${input.venueName} : un angle à tester avec ${input.companyName}, fondé sur un score explicable de ${input.score}/100.`,
     };
+  }
+
+  async generateEmailVariants(input: EmailGenerationInput) {
+    const facts = input.verifiedFacts.map((fact) => ({
+      fact: fact.fact,
+      source_reference: fact.sourceReference,
+    }));
+    const missing = [
+      ...(input.offerName ? [] : ["offre sélectionnée"]),
+      ...(input.venueName ? [] : ["établissement sélectionné"]),
+      ...(facts.length ? [] : ["fait de personnalisation vérifié"]),
+    ];
+    const subjects = input.offerName
+      ? [
+          `${input.offerName} pour votre équipe`,
+          `Une piste événementielle : ${input.offerName}`,
+          `Une idée à étudier pour ${input.companyName}`,
+        ]
+      : [
+          "Une idée d’événement pour votre équipe",
+          "Une piste événementielle à étudier",
+          `Une idée pour ${input.companyName}`,
+        ];
+
+    const variants = (
+      [
+        ["Directe", "direct"],
+        ["Premium", "premium"],
+        ["Relationnelle", "relational"],
+      ] as const
+    ).map(([label, style], index) => {
+      const bodyText = emailBody(input, style);
+      return {
+        label,
+        subject: subjects[index]!,
+        body_text: bodyText,
+        body_html: bodyText
+          .split("\n\n")
+          .map((paragraph) => `<p>${escapeHtml(paragraph).replaceAll("\n", "<br>")}</p>`)
+          .join(""),
+        personalization_facts: facts,
+        risk_flags: missing.length ? ["Personnalisation limitée aux faits disponibles."] : [],
+      };
+    });
+
+    return emailGenerationOutputSchema.parse({
+      variants,
+      recommended_variant: input.tone.includes("premium")
+        ? 1
+        : input.tone.includes("relation")
+          ? 2
+          : 0,
+      reason: "Variante courte, explicite et limitée aux faits de personnalisation vérifiés.",
+      missing_information: missing,
+    });
   }
 }

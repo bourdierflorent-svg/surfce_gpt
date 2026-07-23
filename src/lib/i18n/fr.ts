@@ -67,7 +67,7 @@ export const fr = {
     eyebrow: "Vue d’ensemble",
     title: "Bonjour",
     description:
-      "L’Explorer, l’enrichissement traçable, les personas et le matching sont opérationnels.",
+      "L’Explorer, l’intelligence commerciale et le bureau d’expédition mock sont opérationnels.",
     cards: {
       organizations: "Organisation active",
       members: "Membres accessibles",
@@ -82,10 +82,10 @@ export const fr = {
     },
     values: {
       serverAndDatabase: "Serveur + base",
-      protectedTables: "14 tables métier",
+      protectedTables: "23 tables métier",
     },
     scopeTitle: "Périmètre livré",
-    scopeDescription: "Les Phases 0 à 4 sont maintenant livrées.",
+    scopeDescription: "Les Phases 0 à 5 sont maintenant livrées.",
     scopeItems: [
       "Authentification, organisations et rôles",
       "Isolation multi-tenant par Row Level Security",
@@ -95,10 +95,13 @@ export const fr = {
       "Registre entreprises et recherches PostGIS",
       "Enrichissement mock et jobs idempotents",
       "Personas sourcés et matching explicable",
+      "Contacts vérifiés et opposition atomique",
+      "Campagnes, séquences et génération de trois variantes",
+      "Approbation, planification et envoi mock dédupliqué",
     ],
     nextTitle: "Prochaine étape",
     nextDescription:
-      "La Phase 5 ajoutera les contacts, le mail provider mock et les campagnes, sans connecter encore Gmail ou Microsoft.",
+      "La Phase 6 connectera Gmail ou Microsoft et construira l’inbox SURFCE, sans modifier la DA propre au produit.",
   },
   settings: {
     eyebrow: "Paramètres",
@@ -115,6 +118,7 @@ export const fr = {
     noMembers: "Aucun membre n’est disponible.",
     membersLink: "Consulter les membres",
     organizationLink: "Retour à l’organisation",
+    mailboxesLink: "Consulter les boîtes d’expédition",
     activeMemberCount: (count: number) => `${count} membre(s) actif(s)`,
   },
   errors: {

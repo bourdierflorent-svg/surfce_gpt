@@ -4,10 +4,10 @@ SURFCE est un outil indépendant de prospection B2B et de CRM événementiel, co
 son propriétaire. Stargazing constitue son premier cas d’usage métier, sans définir la marque ni
 la direction artistique de SURFCE.
 
-Le dépôt couvre actuellement les **Phases 0 à 4** du cahier des charges : socle Next.js,
+Le dépôt couvre actuellement les **Phases 0 à 5** du cahier des charges : socle Next.js,
 authentification Supabase SSR, organisations et rôles, registre des établissements, Explorer,
-entreprises, enrichissement mock, personas et matching. Aucun provider externe payant ni aucune
-fonctionnalité de campagne n’est encore activé.
+entreprises, enrichissement mock, personas, matching, contacts et campagnes mock. Aucun provider
+externe payant et aucun envoi réel ne sont activés.
 
 ## Prérequis
 
@@ -35,7 +35,7 @@ Ouvrir ensuite `http://localhost:3000/login`.
 
 ## Variables d’environnement
 
-### Configuration publique des Phases 1 à 4
+### Configuration publique des Phases 1 à 5
 
 | Variable                        | Exposition | Usage                               |
 | ------------------------------- | ---------- | ----------------------------------- |
@@ -55,9 +55,10 @@ Seules les deux variables Supabase sont requises pour l’authentification actue
 | `CRON_SECRET`               |          5+ | Protection des routes planifiées                         |
 
 Toutes les autres variables sont décrites dans `.env.example`. La carte Phase 3 utilise un style
-vectoriel local. La Phase 4 utilise `AI_PROVIDER=mock` et `COMPANY_REGISTRY_PROVIDER=mock` par
-défaut : aucune clé de carte, de registre, d’enrichissement ou d’IA externe n’est nécessaire. Les
-clés Gmail, Microsoft et monitoring restent inutilisées.
+vectoriel local. Les Phases 4 et 5 utilisent `AI_PROVIDER=mock`,
+`COMPANY_REGISTRY_PROVIDER=mock`, `CONTACT_VERIFICATION_PROVIDER=mock` et `MAIL_PROVIDER=mock` par
+défaut : aucune clé de carte, de registre, de vérification, d’enrichissement, d’IA ou de mail
+externe n’est nécessaire. Les clés Gmail, Microsoft et monitoring restent inutilisées.
 
 ## Supabase local
 
@@ -105,8 +106,20 @@ Routes actuellement disponibles :
 - `/companies` ;
 - `/companies/[companyId]` ;
 - `/companies/[companyId]/edit` ;
-- `/api/discovery/search`, `/import`, `/import-batch`, `/deduplicate` et `/saved`.
+- `/contacts` ;
+- `/contacts/[contactId]` ;
+- `/campaigns` ;
+- `/campaigns/new` ;
+- `/campaigns/[campaignId]` ;
+- `/campaigns/[campaignId]/edit` ;
+- `/settings/mailboxes` ;
+- `/api/discovery/search`, `/import`, `/import-batch`, `/deduplicate` et `/saved` ;
 - `/api/companies/[id]/enrich`, `/verify`, `/persona` et `/match-venues`.
+- `/api/contacts/[id]/verify-email` et `/suppress` ;
+- `/api/campaigns`, puis `/api/campaigns/[id]/enroll`, `/unenroll`, `/preview`, `/approve`,
+  `/launch` et `/pause` ;
+- `/api/messages/generate`, `/send-test` et `/send` ;
+- `/api/cron/process-campaigns`, fermée tant que `CRON_SECRET` n’est pas configuré.
 
 ## Établissements, offres et galerie
 
@@ -158,6 +171,25 @@ La fiche entreprise utilise les onglets `Persona`, `Recommandations` et `Donnée
 actions restent réservées aux administrateurs, responsables commerciaux et commerciaux assignés.
 Les autres rôles conservent un accès en lecture via RLS.
 
+## Contacts et campagnes mock
+
+La Phase 5 livre :
+
+- quinze contacts professionnels fictifs sur des domaines `.example` ;
+- un provider de vérification d’adresse mock et sa traçabilité dans `data_sources` ;
+- une liste globale de suppression portant sur l’e-mail, le contact, la société ou le domaine ;
+- une boîte d’expédition mock sans token OAuth ni livraison réelle ;
+- la création d’une campagne et d’une séquence de quatre étapes à délais configurables ;
+- exactement trois variantes IA mock par message, limitées aux faits référencés ;
+- l’aperçu, la validation obligatoire du premier message, le lancement et la pause ;
+- un calendrier `Europe/Paris`, limité aux jours et horaires ouvrés, avec jitter déterministe ;
+- un contrôle atomique de l’opposition avant l’inscription et juste avant l’envoi ;
+- une clé de déduplication unique et une RPC transactionnelle empêchant tout double envoi.
+
+Le scénario complet s’exécute à coût nul. Les identifiants de message et de fil sont déterministes
+et explicitement marqués `mock`. La route cron est protégée par `CRON_SECRET` et reste fail-closed
+tant que ce secret n’est pas fourni.
+
 ## Qualité et tests
 
 ```powershell
@@ -173,9 +205,9 @@ Le test d’intégration RLS nécessite une base Supabase locale démarrée :
 npm run test:rls
 ```
 
-Les scénarios vérifient notamment l’isolation entre organisations, les matrices de rôles des lieux
-et entreprises, l’import idempotent, la géométrie rayon/polygone, les jobs, le persona Zod et le
-scoring explicable.
+Les scénarios vérifient notamment l’isolation entre organisations, les matrices de rôles des lieux,
+entreprises, contacts et campagnes, l’import idempotent, la géométrie rayon/polygone, les jobs, le
+persona Zod, le scoring explicable, la suppression et l’absence de double envoi mock.
 
 ## Déploiement Vercel
 
@@ -187,19 +219,21 @@ scoring explicable.
 
 ## Providers et messagerie
 
-`MockPlacesProvider`, `MockCompanyRegistryProvider`, `MockWebsiteEnrichmentProvider` et
-`MockAiProvider` sont implémentés derrière des interfaces. Ils n’effectuent aucun appel distant et
-annoncent un coût nul. Les implémentations réelles Places, SIRENE, Hunter, Dropcontact et OpenAI
-restent désactivées tant que leurs clés et règles d’usage ne sont pas configurées. Gmail et
-Microsoft 365 ne seront abordés qu’en Phase 6.
+`MockPlacesProvider`, `MockCompanyRegistryProvider`, `MockWebsiteEnrichmentProvider`,
+`MockContactVerificationProvider`, `MockMailProvider` et `MockAiProvider` sont implémentés derrière
+des interfaces. Ils n’effectuent aucun appel distant et annoncent un coût nul. Les implémentations
+réelles Places, SIRENE, Hunter, Dropcontact et OpenAI restent désactivées tant que leurs clés et
+règles d’usage ne sont pas configurées. Gmail et Microsoft 365 ne seront abordés qu’en Phase 6,
+après configuration de l’URL de l’application et des redirect URIs.
 
 ## Limitations connues
 
 - le jeu Explorer est fictif et limité à Paris tant qu’aucun provider réel n’est configuré ;
 - les données commerciales Stargazing du seed doivent être vérifiées et complétées ;
 - l’exécution pgTAP locale requiert Docker ;
-- `npm audit` signale actuellement des dépendances transitives de la dernière version stable de
-  Next.js ; le détail et la stratégie sont suivis dans `IMPLEMENTATION_STATUS.md`.
+- les trois RPC Phase 5 sont volontairement appelables par les seuls utilisateurs authentifiés et
+  signalées comme `SECURITY DEFINER` par le linter Supabase ;
+- l’URL publique et les secrets OAuth/cron ne sont pas encore configurés.
 
 Voir [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) et
 [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) pour l’état détaillé.

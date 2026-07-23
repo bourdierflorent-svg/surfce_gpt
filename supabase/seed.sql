@@ -831,3 +831,556 @@ set
   status = excluded.status,
   token_usage = excluded.token_usage,
   completed_at = excluded.completed_at;
+
+-- Phase 5: all people, addresses and outbound activity below are explicitly fictional.
+-- Reserved .example domains ensure the mock mail provider cannot target a real recipient.
+insert into public.contacts (
+  id,
+  organization_id,
+  company_id,
+  first_name,
+  last_name,
+  full_name,
+  job_title,
+  department,
+  email,
+  email_status,
+  contact_status,
+  confidence,
+  lawful_basis,
+  do_not_contact,
+  do_not_contact_reason,
+  tags
+)
+values
+  ('70000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000001', 'Lina', 'Martin', 'Lina Martin', 'Responsable Communication', 'Communication', 'lina.martin@studio-huit.example', 'valid', 'valid', 0.97, 'intérêt légitime B2B documenté — démonstration', false, null, array['fictif', 'communication']),
+  ('70000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000001', 'Noé', 'Bernard', 'Noé Bernard', 'Office Manager', 'Opérations', 'noe.bernard@studio-huit.example', 'valid', 'valid', 0.96, 'intérêt légitime B2B documenté — démonstration', false, null, array['fictif', 'office']),
+  ('70000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000001', 'Inès', 'Robert', 'Inès Robert', 'Responsable Événementiel', 'Communication', 'ines.robert@studio-huit.example', 'valid', 'valid', 0.94, 'intérêt légitime B2B documenté — démonstration', false, null, array['fictif', 'evenementiel']),
+  ('70000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000001', 'Malo', 'Petit', 'Malo Petit', 'Responsable Marketing', 'Marketing', 'malo.petit@studio-huit.example', 'valid', 'valid', 0.93, 'intérêt légitime B2B documenté — démonstration', false, null, array['fictif', 'marketing']),
+  ('70000000-0000-0000-0000-000000000005', '10000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000001', 'Aya', 'Moreau', 'Aya Moreau', 'Responsable RH', 'Ressources humaines', 'aya.moreau@studio-huit.example', 'unverified', 'to_verify', 0.61, null, false, null, array['fictif', 'rh']),
+  ('70000000-0000-0000-0000-000000000006', '10000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000001', 'Sacha', 'Leroy', 'Sacha Leroy', 'Responsable Partenariats', 'Développement', 'sacha.leroy@studio-huit.example', 'valid', 'valid', 0.92, 'intérêt légitime B2B documenté — démonstration', false, null, array['fictif', 'partenariats']),
+  ('70000000-0000-0000-0000-000000000007', '10000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000001', 'Lou', 'Roux', 'Lou Roux', 'Assistante de direction', 'Direction', 'lou.roux@autre-studio.example', 'risky', 'risky', 0.63, null, false, null, array['fictif', 'direction']),
+  ('70000000-0000-0000-0000-000000000008', '10000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000001', 'Eden', 'Fournier', 'Eden Fournier', 'Responsable Relations Presse', 'Presse', 'eden.fournier@studio-huit.example', 'valid', 'valid', 0.91, 'intérêt légitime B2B documenté — démonstration', false, null, array['fictif', 'presse']),
+  ('70000000-0000-0000-0000-000000000009', '10000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000002', 'Alix', 'Girard', 'Alix Girard', 'Office Manager', 'Opérations', 'alix.girard@rive-conseil.example', 'valid', 'valid', 0.96, 'intérêt légitime B2B documenté — démonstration', false, null, array['fictif', 'office']),
+  ('70000000-0000-0000-0000-000000000010', '10000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000002', 'Nina', 'Bonnet', 'Nina Bonnet', 'Responsable Expérience Collaborateur', 'Ressources humaines', 'nina.bonnet@rive-conseil.example', 'valid', 'valid', 0.95, 'intérêt légitime B2B documenté — démonstration', false, null, array['fictif', 'experience']),
+  ('70000000-0000-0000-0000-000000000011', '10000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000002', 'Maël', 'Dupont', 'Maël Dupont', 'Direction Générale', 'Direction', 'mael.dupont@rive-conseil.example', 'unverified', 'to_verify', 0.58, null, false, null, array['fictif', 'direction']),
+  ('70000000-0000-0000-0000-000000000012', '10000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000002', 'Jade', 'Lambert', 'Jade Lambert', 'Responsable Communication', 'Communication', 'jade.lambert@rive-conseil.example', 'valid', 'valid', 0.93, 'intérêt légitime B2B documenté — démonstration', false, null, array['fictif', 'communication']),
+  ('70000000-0000-0000-0000-000000000013', '10000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000002', 'Éli', 'Fontaine', 'Éli Fontaine', 'Responsable Hospitality', 'Hospitality', 'adresse-invalide', 'invalid', 'invalid', 0.99, null, false, null, array['fictif', 'invalide']),
+  ('70000000-0000-0000-0000-000000000014', '10000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000002', 'Rose', 'Chevalier', 'Rose Chevalier', 'Responsable Marketing', 'Marketing', 'rose.chevalier@rive-conseil.example', 'valid', 'valid', 0.92, 'intérêt légitime B2B documenté — démonstration', false, null, array['fictif', 'marketing']),
+  ('70000000-0000-0000-0000-000000000015', '10000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000002', 'Elio', 'Mercier', 'Elio Mercier', 'Responsable RH', 'Ressources humaines', 'elio.mercier@rive-conseil.example', 'valid', 'do_not_contact', 0.95, 'intérêt légitime B2B documenté — démonstration', true, 'Opposition fictive de démonstration', array['fictif', 'suppression'])
+on conflict (id) do update
+set
+  company_id = excluded.company_id,
+  first_name = excluded.first_name,
+  last_name = excluded.last_name,
+  full_name = excluded.full_name,
+  job_title = excluded.job_title,
+  department = excluded.department,
+  email = excluded.email,
+  email_status = excluded.email_status,
+  contact_status = excluded.contact_status,
+  confidence = excluded.confidence,
+  lawful_basis = excluded.lawful_basis,
+  do_not_contact = excluded.do_not_contact,
+  do_not_contact_reason = excluded.do_not_contact_reason,
+  tags = excluded.tags,
+  deleted_at = null;
+
+insert into public.data_sources (
+  organization_id,
+  entity_type,
+  entity_id,
+  field_name,
+  provider,
+  external_reference,
+  raw_value,
+  normalized_value,
+  collected_at,
+  last_verified_at,
+  confidence,
+  is_inferred,
+  metadata
+)
+select
+  c.organization_id,
+  'contact',
+  c.id,
+  'professional_record',
+  'seed_mock',
+  'seed-contact:' || c.id::text,
+  jsonb_build_object('full_name', c.full_name, 'job_title', c.job_title, 'fictional', true),
+  jsonb_build_object('full_name', c.full_name, 'job_title', c.job_title, 'fictional', true),
+  '2026-07-23T10:00:00+02:00'::timestamptz,
+  '2026-07-23T10:00:00+02:00'::timestamptz,
+  case when c.contact_status in ('valid', 'do_not_contact') then 0.90 else 0.70 end,
+  false,
+  '{"mock":true,"fictional":true}'::jsonb
+from public.contacts c
+where c.organization_id = '10000000-0000-0000-0000-000000000001'
+  and c.id::text like '70000000-0000-0000-0000-0000000000%'
+on conflict (organization_id, entity_type, provider, external_reference, field_name)
+where external_reference is not null
+do update set
+  raw_value = excluded.raw_value,
+  normalized_value = excluded.normalized_value,
+  last_verified_at = excluded.last_verified_at,
+  confidence = excluded.confidence,
+  metadata = excluded.metadata;
+
+insert into public.suppression_list (
+  id,
+  organization_id,
+  email,
+  normalized_email,
+  domain,
+  company_id,
+  contact_id,
+  reason,
+  source,
+  suppressed_at,
+  metadata
+)
+values (
+  '7f000000-0000-0000-0000-000000000001',
+  '10000000-0000-0000-0000-000000000001',
+  'elio.mercier@rive-conseil.example',
+  'elio.mercier@rive-conseil.example',
+  null,
+  '50000000-0000-0000-0000-000000000002',
+  '70000000-0000-0000-0000-000000000015',
+  'Opposition fictive de démonstration',
+  'seed_mock',
+  '2026-07-23T10:05:00+02:00',
+  '{"mock":true,"fictional":true,"scope":"email"}'::jsonb
+)
+on conflict (organization_id, normalized_email) do update
+set
+  reason = excluded.reason,
+  source = excluded.source,
+  company_id = excluded.company_id,
+  contact_id = excluded.contact_id,
+  suppressed_at = excluded.suppressed_at,
+  expires_at = null,
+  metadata = excluded.metadata;
+
+do $$
+declare
+  owner_user_id uuid;
+begin
+  select user_id
+  into owner_user_id
+  from public.memberships
+  where organization_id = '10000000-0000-0000-0000-000000000001'
+    and is_active = true
+  order by case when role = 'admin' then 0 else 1 end, created_at
+  limit 1;
+
+  if owner_user_id is null then
+    raise notice 'Phase 5 campaign seed skipped: no SURFCE membership is available.';
+    return;
+  end if;
+
+  insert into public.mailboxes (
+    id,
+    organization_id,
+    user_id,
+    provider,
+    provider_account_id,
+    email_address,
+    display_name,
+    status,
+    daily_send_limit,
+    sent_today
+  )
+  values (
+    '71000000-0000-0000-0000-000000000001',
+    '10000000-0000-0000-0000-000000000001',
+    owner_user_id,
+    'mock',
+    'mock-surfce-primary',
+    'florent@stargazing.example',
+    'Florent — Stargazing',
+    'connected',
+    20,
+    1
+  )
+  on conflict (id) do update
+  set
+    user_id = excluded.user_id,
+    email_address = excluded.email_address,
+    display_name = excluded.display_name,
+    status = excluded.status,
+    daily_send_limit = excluded.daily_send_limit,
+    sent_today = excluded.sent_today,
+    encrypted_access_token = null,
+    encrypted_refresh_token = null;
+
+  insert into public.campaigns (
+    id,
+    organization_id,
+    name,
+    description,
+    status,
+    venue_id,
+    offer_id,
+    mailbox_id,
+    segment_definition,
+    language,
+    tone,
+    daily_limit,
+    send_window,
+    stop_rules,
+    requires_first_message_approval,
+    created_by,
+    approved_by,
+    approved_at,
+    launched_at
+  )
+  values
+    (
+      '72000000-0000-0000-0000-000000000001',
+      '10000000-0000-0000-0000-000000000001',
+      'Afterwork agences parisiennes',
+      'Scénario mock complet pour proposer un afterwork à faible volume.',
+      'active',
+      '30000000-0000-0000-0000-000000000001',
+      '40000000-0000-0000-0000-000000000001',
+      '71000000-0000-0000-0000-000000000001',
+      '{"label":"Agences de communication — Paris","mode":"manual_contacts"}'::jsonb,
+      'fr',
+      'directe et commerciale',
+      10,
+      '{"timezone":"Europe/Paris","weekdays":[1,2,3,4,5],"start":"09:00","end":"17:30"}'::jsonb,
+      '{"human_reply":true,"unsubscribe":true,"bounce":true,"do_not_contact":true}'::jsonb,
+      true,
+      owner_user_id,
+      owner_user_id,
+      now() - interval '3 days',
+      now() - interval '2 days'
+    ),
+    (
+      '72000000-0000-0000-0000-000000000002',
+      '10000000-0000-0000-0000-000000000001',
+      'Dîner cabinets de conseil',
+      'Brouillon mock avant génération et validation.',
+      'draft',
+      '30000000-0000-0000-0000-000000000004',
+      '40000000-0000-0000-0000-000000000004',
+      '71000000-0000-0000-0000-000000000001',
+      '{"label":"Cabinets de conseil — Paris","mode":"manual_contacts"}'::jsonb,
+      'fr',
+      'premium et événementielle',
+      8,
+      '{"timezone":"Europe/Paris","weekdays":[1,2,3,4,5],"start":"09:30","end":"17:00"}'::jsonb,
+      '{"human_reply":true,"unsubscribe":true,"bounce":true,"do_not_contact":true}'::jsonb,
+      true,
+      owner_user_id,
+      null,
+      null,
+      null
+    )
+  on conflict (id) do update
+  set
+    name = excluded.name,
+    description = excluded.description,
+    status = excluded.status,
+    venue_id = excluded.venue_id,
+    offer_id = excluded.offer_id,
+    mailbox_id = excluded.mailbox_id,
+    segment_definition = excluded.segment_definition,
+    language = excluded.language,
+    tone = excluded.tone,
+    daily_limit = excluded.daily_limit,
+    send_window = excluded.send_window,
+    stop_rules = excluded.stop_rules,
+    requires_first_message_approval = excluded.requires_first_message_approval,
+    created_by = excluded.created_by,
+    approved_by = excluded.approved_by,
+    approved_at = excluded.approved_at,
+    launched_at = excluded.launched_at;
+
+  insert into public.sequence_steps (
+    id,
+    organization_id,
+    campaign_id,
+    position,
+    delay_days,
+    delay_hours,
+    ai_instructions,
+    requires_approval,
+    is_active
+  )
+  values
+    ('73000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', '72000000-0000-0000-0000-000000000001', 0, 0, 0, 'Premier contact', true, true),
+    ('73000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000001', '72000000-0000-0000-0000-000000000001', 1, 4, 0, 'Relance courte', false, true),
+    ('73000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000001', '72000000-0000-0000-0000-000000000001', 2, 9, 0, 'Exemple d’offre', false, true),
+    ('73000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000001', '72000000-0000-0000-0000-000000000001', 3, 14, 0, 'Fermeture polie', false, true),
+    ('73000000-0000-0000-0000-000000000005', '10000000-0000-0000-0000-000000000001', '72000000-0000-0000-0000-000000000002', 0, 0, 0, 'Premier contact', true, true),
+    ('73000000-0000-0000-0000-000000000006', '10000000-0000-0000-0000-000000000001', '72000000-0000-0000-0000-000000000002', 1, 5, 0, 'Relance courte', false, true),
+    ('73000000-0000-0000-0000-000000000007', '10000000-0000-0000-0000-000000000001', '72000000-0000-0000-0000-000000000002', 2, 10, 0, 'Proposition de valeur', false, true),
+    ('73000000-0000-0000-0000-000000000008', '10000000-0000-0000-0000-000000000001', '72000000-0000-0000-0000-000000000002', 3, 14, 0, 'Fermeture polie', false, true)
+  on conflict (campaign_id, position) do update
+  set
+    delay_days = excluded.delay_days,
+    delay_hours = excluded.delay_hours,
+    ai_instructions = excluded.ai_instructions,
+    requires_approval = excluded.requires_approval,
+    is_active = excluded.is_active;
+
+  insert into public.campaign_enrollments (
+    id,
+    organization_id,
+    campaign_id,
+    company_id,
+    contact_id,
+    status,
+    current_step,
+    next_send_at,
+    last_sent_at,
+    personalization_snapshot
+  )
+  values
+    (
+      '74000000-0000-0000-0000-000000000001',
+      '10000000-0000-0000-0000-000000000001',
+      '72000000-0000-0000-0000-000000000001',
+      '50000000-0000-0000-0000-000000000001',
+      '70000000-0000-0000-0000-000000000001',
+      'active',
+      0,
+      now() + interval '2 days',
+      now() - interval '2 days',
+      '{"contact_name":"Lina Martin","verified":true,"mock":true}'::jsonb
+    ),
+    (
+      '74000000-0000-0000-0000-000000000002',
+      '10000000-0000-0000-0000-000000000001',
+      '72000000-0000-0000-0000-000000000002',
+      '50000000-0000-0000-0000-000000000002',
+      '70000000-0000-0000-0000-000000000009',
+      'draft',
+      0,
+      null,
+      null,
+      '{"contact_name":"Alix Girard","verified":true,"mock":true}'::jsonb
+    )
+  on conflict (campaign_id, contact_id) do update
+  set
+    status = excluded.status,
+    current_step = excluded.current_step,
+    next_send_at = excluded.next_send_at,
+    last_sent_at = excluded.last_sent_at,
+    stopped_at = null,
+    stop_reason = null,
+    personalization_snapshot = excluded.personalization_snapshot;
+
+  insert into public.mail_threads (
+    id,
+    organization_id,
+    mailbox_id,
+    provider_thread_id,
+    company_id,
+    contact_id,
+    campaign_id,
+    subject,
+    last_message_at
+  )
+  values (
+    '75000000-0000-0000-0000-000000000001',
+    '10000000-0000-0000-0000-000000000001',
+    '71000000-0000-0000-0000-000000000001',
+    'mock_thread_seed_lina',
+    '50000000-0000-0000-0000-000000000001',
+    '70000000-0000-0000-0000-000000000001',
+    '72000000-0000-0000-0000-000000000001',
+    'Afterwork 20 à 50 personnes pour votre équipe',
+    now() - interval '2 days'
+  )
+  on conflict (mailbox_id, provider_thread_id) do update
+  set
+    subject = excluded.subject,
+    last_message_at = excluded.last_message_at;
+
+  insert into public.messages (
+    id,
+    organization_id,
+    thread_id,
+    campaign_id,
+    enrollment_id,
+    sequence_step_id,
+    provider_message_id,
+    deduplication_key,
+    direction,
+    sender,
+    recipients,
+    subject,
+    body_text,
+    body_html,
+    variant_label,
+    personalization_facts,
+    risk_flags,
+    scheduled_at,
+    sent_at,
+    status,
+    approved_by,
+    approved_at,
+    headers
+  )
+  values
+    (
+      '76000000-0000-0000-0000-000000000001',
+      '10000000-0000-0000-0000-000000000001',
+      '75000000-0000-0000-0000-000000000001',
+      '72000000-0000-0000-0000-000000000001',
+      '74000000-0000-0000-0000-000000000001',
+      '73000000-0000-0000-0000-000000000001',
+      'mock_message_seed_lina_first',
+      'seed:campaign-1:enrollment-1:step-0',
+      'outbound',
+      '{"email":"florent@stargazing.example","name":"Florent — Stargazing"}'::jsonb,
+      '[{"email":"lina.martin@studio-huit.example","name":"Lina Martin"}]'::jsonb,
+      'Afterwork 20 à 50 personnes pour votre équipe',
+      E'Bonjour Lina,\n\nStudio Huit Communication est située à Paris. Je vous contacte avec une proposition simple : un afterwork chez Little Room.\n\nSouhaitez-vous que je vous envoie les grandes lignes ?\n\nBien à vous,\nFlorent\n\nSi ce sujet n’est pas pertinent, dites-le-moi et je ne vous recontacterai pas.',
+      '<p>Bonjour Lina,</p><p>Studio Huit Communication est située à Paris. Proposition : un afterwork chez Little Room.</p><p>Si ce sujet n’est pas pertinent, dites-le-moi et je ne vous recontacterai pas.</p>',
+      'Directe',
+      '[{"fact":"Studio Huit Communication est située à Paris.","source_reference":"52000000-0000-0000-0000-000000000001"}]'::jsonb,
+      '[]'::jsonb,
+      now() - interval '2 days',
+      now() - interval '2 days',
+      'sent_mock',
+      owner_user_id,
+      now() - interval '3 days',
+      '{"mock":true,"prompt_version":"campaign-email.v1"}'::jsonb
+    ),
+    (
+      '76000000-0000-0000-0000-000000000002',
+      '10000000-0000-0000-0000-000000000001',
+      '75000000-0000-0000-0000-000000000001',
+      '72000000-0000-0000-0000-000000000001',
+      '74000000-0000-0000-0000-000000000001',
+      '73000000-0000-0000-0000-000000000002',
+      null,
+      'seed:campaign-1:enrollment-1:step-1',
+      'outbound',
+      '{"email":"florent@stargazing.example","name":"Florent — Stargazing"}'::jsonb,
+      '[{"email":"lina.martin@studio-huit.example","name":"Lina Martin"}]'::jsonb,
+      'Une relance courte pour votre équipe',
+      E'Bonjour Lina,\n\nJe me permets une relance courte au cas où ce sujet soit d’actualité.\n\nSi ce sujet n’est pas pertinent, dites-le-moi et je ne vous recontacterai pas.',
+      '<p>Bonjour Lina,</p><p>Je me permets une relance courte.</p><p>Si ce sujet n’est pas pertinent, dites-le-moi et je ne vous recontacterai pas.</p>',
+      'Directe',
+      '[{"fact":"Studio Huit Communication est située à Paris.","source_reference":"52000000-0000-0000-0000-000000000001"}]'::jsonb,
+      '[]'::jsonb,
+      now() + interval '2 days',
+      null,
+      'scheduled',
+      null,
+      null,
+      '{"mock":true,"prompt_version":"campaign-email.v1"}'::jsonb
+    )
+  on conflict (organization_id, deduplication_key) do update
+  set
+    thread_id = excluded.thread_id,
+    provider_message_id = excluded.provider_message_id,
+    sender = excluded.sender,
+    recipients = excluded.recipients,
+    subject = excluded.subject,
+    body_text = excluded.body_text,
+    body_html = excluded.body_html,
+    variant_label = excluded.variant_label,
+    personalization_facts = excluded.personalization_facts,
+    risk_flags = excluded.risk_flags,
+    scheduled_at = excluded.scheduled_at,
+    sent_at = excluded.sent_at,
+    status = excluded.status,
+    approved_by = excluded.approved_by,
+    approved_at = excluded.approved_at,
+    headers = excluded.headers;
+
+  insert into public.provider_jobs (
+    id,
+    organization_id,
+    idempotency_key,
+    job_type,
+    provider,
+    entity_type,
+    entity_id,
+    status,
+    input,
+    output,
+    attempt_count,
+    estimated_cost,
+    scheduled_at,
+    started_at,
+    completed_at
+  )
+  values (
+    '78000000-0000-0000-0000-000000000001',
+    '10000000-0000-0000-0000-000000000001',
+    'seed-campaign-email-72000000-0000-0000-0000-000000000001',
+    'campaign_email_generation',
+    'mock_ai',
+    'campaign',
+    '72000000-0000-0000-0000-000000000001',
+    'completed',
+    '{"mock":true,"prompt_version":"campaign-email.v1"}'::jsonb,
+    '{"generatedCount":2,"enrollmentCount":1,"estimatedCost":0,"mock":true}'::jsonb,
+    1,
+    0,
+    now() - interval '3 days',
+    now() - interval '3 days',
+    now() - interval '3 days'
+  )
+  on conflict (organization_id, idempotency_key) do update
+  set
+    status = excluded.status,
+    input = excluded.input,
+    output = excluded.output,
+    attempt_count = excluded.attempt_count,
+    estimated_cost = excluded.estimated_cost,
+    completed_at = excluded.completed_at;
+
+  insert into public.ai_runs (
+    id,
+    organization_id,
+    run_type,
+    entity_type,
+    entity_id,
+    provider,
+    model,
+    prompt_version,
+    input_hash,
+    input_snapshot,
+    output,
+    status,
+    token_usage,
+    created_by,
+    created_at,
+    completed_at
+  )
+  values (
+    '79000000-0000-0000-0000-000000000001',
+    '10000000-0000-0000-0000-000000000001',
+    'campaign_email_generation',
+    'campaign',
+    '72000000-0000-0000-0000-000000000001',
+    'mock_ai',
+    'surfce-deterministic-mock-v1',
+    'campaign-email.v1',
+    'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+    '{"campaignId":"72000000-0000-0000-0000-000000000001","sourceReferences":["52000000-0000-0000-0000-000000000001"],"mock":true}'::jsonb,
+    '{"variants":[{"label":"Directe","subject":"Afterwork 20 à 50 personnes pour votre équipe","body_text":"Bonjour Lina — proposition mock.","body_html":"<p>Bonjour Lina — proposition mock.</p>","personalization_facts":[{"fact":"Studio Huit Communication est située à Paris.","source_reference":"52000000-0000-0000-0000-000000000001"}],"risk_flags":[]},{"label":"Premium","subject":"Une piste événementielle à étudier","body_text":"Bonjour Lina — piste premium mock.","body_html":"<p>Bonjour Lina — piste premium mock.</p>","personalization_facts":[{"fact":"Studio Huit Communication est située à Paris.","source_reference":"52000000-0000-0000-0000-000000000001"}],"risk_flags":[]},{"label":"Relationnelle","subject":"Une idée pour Studio Huit Communication","body_text":"Bonjour Lina — idée relationnelle mock.","body_html":"<p>Bonjour Lina — idée relationnelle mock.</p>","personalization_facts":[{"fact":"Studio Huit Communication est située à Paris.","source_reference":"52000000-0000-0000-0000-000000000001"}],"risk_flags":[]}],"recommended_variant":0,"reason":"Variante courte et vérifiée.","missing_information":[]}'::jsonb,
+    'completed',
+    '{"mode":"mock","input_tokens":0,"output_tokens":0}'::jsonb,
+    owner_user_id,
+    now() - interval '3 days',
+    now() - interval '3 days'
+  )
+  on conflict (id) do update
+  set
+    output = excluded.output,
+    status = excluded.status,
+    token_usage = excluded.token_usage,
+    created_by = excluded.created_by,
+    completed_at = excluded.completed_at;
+end;
+$$;

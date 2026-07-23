@@ -21,7 +21,8 @@ racine. Aucun code métier antérieur n’a donc été supprimé ou remplacé.
 | Phase 2 — Établissements et offres   | Déployée       | CRUD, offres, assets privés, galerie, validations, RLS et seed Stargazing                                   |
 | Phase 3 — Entreprises et Explorer    | Déployée       | MapLibre local, provider mock, import dédupliqué, sources, fiches, RLS et PostGIS                           |
 | Phase 4 — Enrichissement et matching | Déployée       | Providers mock, jobs, persona Zod, validation humaine, score explicable et recommandations                  |
-| Phases 5 à 9                         | Non commencées | Hors périmètre de cette intervention                                                                        |
+| Phase 5 — Contacts et campagnes mock | Déployée       | Contacts, vérification, séquences, validation, planification, envoi mock et suppression atomique            |
+| Phases 6 à 9                         | Non commencées | Providers mail externes, inbox, CRM, analytics et durcissement restent hors de cette intervention           |
 
 ## Identité du produit
 
@@ -143,29 +144,73 @@ racine. Aucun code métier antérieur n’a donc été supprimé ou remplacé.
   idempotence ;
 - Security Advisor sans alerte de schéma/RLS et Performance Advisor sans clé étrangère non indexée.
 
+## Livré en Phase 5
+
+- neuf nouvelles tables : `contacts`, `mailboxes`, `campaigns`, `sequence_steps`,
+  `campaign_enrollments`, `mail_threads`, `messages`, `suppression_list` et `audit_logs` ;
+- RLS sur chaque table et trente politiques multi-tenant couvrant lecture, administration,
+  responsables commerciaux, commerciaux assignés, marketing et rôles en lecture seule ;
+- trois RPC atomiques pour inscrire un contact, enregistrer une opposition et traiter un message
+  mock sans double envoi ;
+- exécution des RPC interdite au rôle `anon` et limitée aux utilisateurs authentifiés, avec
+  vérification du rôle et de l’organisation dans chaque fonction ;
+- index couvrant toutes les nouvelles clés étrangères et les chemins de sélection des messages dus ;
+- quinze contacts professionnels fictifs sur des domaines `.example`, une boîte mock sans token,
+  deux campagnes, huit étapes, deux inscriptions et deux messages de démonstration ;
+- interface `ContactVerificationProvider` et `MockContactVerificationProvider`, à coût nul ;
+- interface `MailProvider` et `MockMailProvider`, avec identifiants de message et de fil
+  déterministes sans livraison réelle ;
+- extension de `AiProvider` pour générer exactement trois variantes d’e-mail, validées par Zod,
+  associées à leurs références de source et terminées par une phrase d’opposition ;
+- prompt `campaign-email.v1` versionné et exécutions consignées dans `ai_runs` ;
+- routes Contacts pour la liste, la fiche, la vérification et l’opposition ;
+- routes Campagnes pour créer, inscrire, désinscrire, prévisualiser, approuver, lancer et mettre en
+  pause ;
+- routes Messages pour générer, tester et traiter un envoi mock ;
+- moteur de planification en fuseau `Europe/Paris`, jours ouvrés, fenêtre configurable, délais par
+  étape et jitter déterministe ;
+- premier message obligatoirement validé avant le lancement ;
+- contrôle de suppression par e-mail, contact, société ou domaine avant l’inscription et juste
+  avant l’envoi ;
+- direction visuelle « bureau d’expédition contrôlé » structurée par le rail preuves → variantes →
+  validation → expédition, produite avec `frontend-design` ;
+- audit selon `web-design-guidelines` et corrections des focus clavier, formulaires, annonces
+  asynchrones, contenus longs et états vides ;
+- dix migrations Phase 5 appliquées au projet distant ;
+- assertions distantes rollback-only réussies pour l’isolation, les rôles, la suppression et
+  l’absence de double envoi ;
+- Security Advisor sans RPC anonyme ; les trois avertissements restants correspondent aux RPC
+  `SECURITY DEFINER` volontairement exposées aux seuls membres authentifiés et contrôlées en
+  interne ;
+- Performance Advisor sans clé étrangère non indexée ; seuls des index neufs encore inutilisés sont
+  signalés au niveau informationnel.
+
 ## Vérifications
 
-| Commande                          | Résultat actuel                                                                |
-| --------------------------------- | ------------------------------------------------------------------------------ |
-| `npm run lint`                    | Réussi — 0 erreur, 0 avertissement                                             |
-| `npm run typecheck`               | Réussi                                                                         |
-| `npm test`                        | Réussi — 11 fichiers, 78 tests                                                 |
-| `npm run format:check`            | Réussi                                                                         |
-| `npm run build`                   | Réussi — 27 routes générées avec Next.js 16.2.11                               |
-| Smoke test `/login` et `/explore` | Réussi — login HTTP 200, Explorer anonyme redirigé vers `/login`               |
-| `npm run test:rls`                | Tenté — échec de connexion à PostgreSQL local, Docker/base locale indisponible |
-| Assertions RLS distantes          | Réussi — isolation de deux organisations et permissions admin/viewer validées  |
-| Supabase Security Advisor         | Schéma/RLS sans alerte — 1 avertissement de configuration Auth documenté       |
-| Auth propriétaire distant         | Réussi — connexion par mot de passe et émission d’un jeton validées            |
-| Assertions RLS Phase 2            | Réussi — isolation, lecture viewer et écriture venue manager validées          |
-| Lecture RLS avec le compte admin  | Réussi — 4 établissements visibles                                             |
-| Stockage privé Phase 2            | Réussi — upload, métadonnée RLS, lecture et suppression                        |
-| Supabase Performance Advisor      | Aucune clé étrangère non indexée — index inutilisés attendus sur tables neuves |
-| Assertions RLS/PostGIS Phase 3    | Réussi — isolation, rôles, rayon, polygone et import idempotent                |
-| Schéma distant Phase 3            | Réussi — 4 tables RLS, 16 politiques, 3 RPC `security invoker`                 |
-| Assertions RLS Phase 4            | Réussi — isolation, viewer, commercial assigné et idempotence                  |
-| Schéma distant Phase 4            | Réussi — 4 tables RLS, 16 politiques, 2 migrations et 0 FK non indexée         |
-| Données mock Phase 4              | Réussi — 1 persona, 4 matchs, 3 jobs, 1 run IA et budget inconnu à `null`      |
+| Commande                         | Résultat actuel                                                                 |
+| -------------------------------- | ------------------------------------------------------------------------------- |
+| `npm run lint`                   | Réussi — 0 erreur, 0 avertissement                                              |
+| `npm run typecheck`              | Réussi                                                                          |
+| `npm test`                       | Réussi — 13 fichiers, 98 tests                                                  |
+| `npm run format:check`           | Réussi                                                                          |
+| `npm run build`                  | Réussi — 48 routes générées avec Next.js 16.2.11                                |
+| Smoke test Phase 5               | Réussi — login 200, Contacts/Campagnes 307 vers login, cron fermé en 503        |
+| `npm run test:rls`               | Tenté — échec de connexion à PostgreSQL local, Docker/base locale indisponible  |
+| Assertions RLS distantes         | Réussi — isolation de deux organisations et permissions admin/viewer validées   |
+| Supabase Security Advisor        | `anon` bloqué ; 3 RPC authentifiées intentionnelles et protection Auth à régler |
+| Auth propriétaire distant        | Réussi — connexion par mot de passe et émission d’un jeton validées             |
+| Assertions RLS Phase 2           | Réussi — isolation, lecture viewer et écriture venue manager validées           |
+| Lecture RLS avec le compte admin | Réussi — 4 établissements visibles                                              |
+| Stockage privé Phase 2           | Réussi — upload, métadonnée RLS, lecture et suppression                         |
+| Supabase Performance Advisor     | Aucune clé étrangère non indexée — index inutilisés attendus sur tables neuves  |
+| Assertions RLS/PostGIS Phase 3   | Réussi — isolation, rôles, rayon, polygone et import idempotent                 |
+| Schéma distant Phase 3           | Réussi — 4 tables RLS, 16 politiques, 3 RPC `security invoker`                  |
+| Assertions RLS Phase 4           | Réussi — isolation, viewer, commercial assigné et idempotence                   |
+| Schéma distant Phase 4           | Réussi — 4 tables RLS, 16 politiques, 2 migrations et 0 FK non indexée          |
+| Données mock Phase 4             | Réussi — 1 persona, 4 matchs, 3 jobs, 1 run IA et budget inconnu à `null`       |
+| Assertions RLS Phase 5           | Réussi — isolation, rôles, suppression et absence de double envoi               |
+| Schéma distant Phase 5           | Réussi — 9 tables RLS, 30 politiques, 10 migrations et 0 FK non indexée         |
+| Données mock Phase 5             | Réussi — 15 contacts, 1 boîte, 2 campagnes, 8 étapes et 2 messages              |
 
 Les invariants RLS sont aussi contrôlés par Vitest. Les scénarios distants ont été exécutés avec des
 utilisateurs fictifs dans des transactions ensuite annulées. Le test pgTAP local reste disponible
@@ -185,17 +230,24 @@ Variables serveur préparées mais non utilisées dans ce périmètre :
 - `APP_ENCRYPTION_KEY` ;
 - `CRON_SECRET`.
 
-La Phase 4 fonctionne entièrement avec les valeurs par défaut `AI_PROVIDER=mock` et
-`COMPANY_REGISTRY_PROVIDER=mock`. Les variables suivantes manquent pour activer de futurs providers
-réels, mais ne bloquent pas l’application actuelle :
+La Phase 5 fonctionne entièrement avec les valeurs par défaut `AI_PROVIDER=mock`,
+`COMPANY_REGISTRY_PROVIDER=mock`, `CONTACT_VERIFICATION_PROVIDER=mock` et `MAIL_PROVIDER=mock`.
+Les variables suivantes manquent pour activer de futurs providers réels, mais ne bloquent pas le
+scénario mock :
 
 - `OPENAI_API_KEY` et `AI_DEFAULT_MODEL` ;
 - `SIRENE_API_KEY` et `SIRENE_API_BASE_URL` ;
 - `HUNTER_API_KEY` ;
 - `DROPCONTACT_API_KEY`.
 
-Les sélecteurs `AI_PROVIDER` et `COMPANY_REGISTRY_PROVIDER` ne sont pas écrits dans `.env.local` ;
-le fallback serveur `mock` est donc utilisé explicitement par le code.
+Les identifiants OAuth Phase 6 ne sont pas configurés :
+
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` et `GOOGLE_REDIRECT_URI` ;
+- `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET`, `MICROSOFT_TENANT_ID` et
+  `MICROSOFT_REDIRECT_URI`.
+
+Les sélecteurs de providers peuvent rester absents de `.env.local` : le fallback serveur `mock`
+est explicite dans le code.
 
 Toutes les clés de providers externes restent volontairement vides et aucun appel externe Phase 4
 n’est effectué.
@@ -207,28 +259,26 @@ n’est effectué.
 2. `NEXT_PUBLIC_APP_URL` reste volontairement vide jusqu’au choix de l’URL de déploiement.
 3. Supabase Auth signale que la protection contre les mots de passe compromis est désactivée. Ce
    réglage doit être activé avant la production depuis les paramètres Auth.
-4. `npm audit` signale actuellement trois vulnérabilités transitives (une modérée et deux hautes).
-   Ne pas appliquer de correction forcée entraînant une rétrogradation majeure de Next.js.
-5. Les valeurs commerciales des lieux, offres, entreprises, personas et recommandations sont des
+4. Les trois RPC Phase 5 sont `SECURITY DEFINER` afin de garantir leurs mutations atomiques. Elles
+   ne sont pas exécutables par `anon`, vérifient le membership et le rôle en interne, mais restent
+   signalées par le Security Advisor car elles sont appelables par `authenticated`.
+5. La route cron de Phase 5 reste fermée tant que `CRON_SECRET` n’est pas défini. Son utilisation
+   autonome en déploiement nécessitera aussi un contexte serveur contrôlé avant activation.
+6. Les valeurs commerciales des lieux, offres, entreprises, personas et recommandations sont des
    données de démonstration à valider, jamais des promesses définitives. Toutes les sociétés
-   Explorer sont fictives.
-6. Le navigateur intégré n’expose aucune instance dans cette session. Le rendu `/login`, le build,
-   les smoke tests HTTP et l’audit structurel responsive/accessibilité ont été validés ; aucune
-   capture de l’Explorer authentifié n’a pu être produite.
-7. L’absence de dépôt Git à la racine empêche de produire un diff Git ou un historique de commit.
-8. Le mode aperçu sert au contrôle visuel uniquement et ne remplace pas une session Supabase.
+   Explorer et tous les contacts Phase 5 sont fictifs.
+7. Le mode aperçu sert au contrôle visuel uniquement et ne remplace pas une session Supabase.
 
 ## Plan des prochaines phases
 
-1. **Phase 5** — contacts, mail mock, campagnes et suppression ;
-2. Phase 6 — Gmail/Microsoft et inbox ;
-3. Phase 7 — opportunités et tâches ;
-4. Phase 8 — dashboard métier, analytics et conformité ;
-5. Phase 9 — durcissement production et E2E.
+1. **Phase 6** — Gmail/Microsoft et inbox ;
+2. Phase 7 — opportunités et tâches ;
+3. Phase 8 — dashboard métier, analytics et conformité ;
+4. Phase 9 — durcissement production et E2E.
 
 ## Prochaine phase
 
-**Phase 5 — Contacts, boîtes et campagnes mock.** La prochaine intervention doit ajouter les
-contacts professionnels, leur vérification, le provider mail mock, les campagnes, séquences,
-aperçus, approbations, règles d’arrêt et liste de suppression. Gmail et Microsoft restent réservés
-à la Phase 6.
+**Phase 6 — Gmail/Microsoft et inbox.** La prochaine intervention doit ajouter OAuth, le stockage
+chiffré des tokens, la synchronisation, les webhooks, les fils de discussion entrants et le
+classement des réponses. Elle ne doit commencer qu’après réception de l’URL publique de
+l’application et configuration des redirect URIs et secrets adaptés.
