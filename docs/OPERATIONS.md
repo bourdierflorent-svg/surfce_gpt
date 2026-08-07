@@ -54,6 +54,10 @@ Valeurs initiales par organisation :
 | Google Workspace   | 60 s    | 120     |
 | Microsoft 365      | 60 s    | 120     |
 
+SIRENE et Hunter utilisent initialement la règle de repli conservatrice de 60 appels par minute.
+Le débit distribué SURFCE reste ainsi inférieur aux limites Hunter documentées ; une règle dédiée
+ne doit être relevée qu’après contrôle du forfait et des usages réels.
+
 Une règle provider + opération précise est prioritaire sur un wildcard. La réservation est
 atomique par verrou transactionnel PostgreSQL. Un dépassement direct renvoie `429` et
 `Retry-After`. Un job provider est bloqué avant son démarrage.

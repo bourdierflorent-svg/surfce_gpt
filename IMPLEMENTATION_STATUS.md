@@ -20,8 +20,8 @@ racine. Aucun code métier antérieur n’a donc été supprimé ou remplacé.
 | Phase 1 — Auth, organisation et RLS  | Déployée    | Supabase SSR, profils, organisations, memberships, rôles, navigation filtrée, migrations, seed et tests RLS |
 | Phase 2 — Établissements et offres   | Déployée    | CRUD, offres, assets privés, galerie, validations, RLS et seed Stargazing                                   |
 | Phase 3 — Entreprises et Explorer    | Déployée    | MapLibre/MapTiler, fallback local, provider mock, import dédupliqué, sources, RLS et PostGIS                |
-| Phase 4 — Enrichissement et matching | Déployée    | Providers mock, jobs, persona Zod, validation humaine, score explicable et recommandations                  |
-| Phase 5 — Contacts et campagnes mock | Déployée    | Contacts, vérification, séquences, validation, planification, envoi mock et suppression atomique            |
+| Phase 4 — Enrichissement et matching | Déployée    | Registre mock/SIRENE, jobs, persona Zod, validation humaine, score explicable et recommandations            |
+| Phase 5 — Contacts et campagnes      | Déployée    | Contacts, vérification mock/Hunter, séquences, planification, envoi mock et suppression atomique            |
 | Phase 6 — Gmail/Microsoft et inbox   | Déployée    | OAuth, tokens chiffrés, sync, webhooks, fils, qualification, réponses et arrêt automatique                  |
 | Phase 7 — Opportunités et tâches     | Déployée    | Pipeline configurable, dossiers, tâches, rendez-vous, propositions, revenu pondéré et audit                 |
 | Phase 8 — Analytics et conformité    | Déployée    | 17 KPI sourcés, filtres, exports audités, rétention, droits des personnes et journal d’audit                |
@@ -364,13 +364,28 @@ racine. Aucun code métier antérieur n’a donc été supprimé ou remplacé.
   conservés, quatre fiches de lieux conservées sans champs inventés, offres de démonstration et
   pipeline fictif supprimés, prototype historique `legacy` inchangé.
 
+## Activation MapTiler, SIRENE et Hunter
+
+- MapTiler Streets v4 est chargé côté serveur depuis `MAP_TILES_API_KEY`, avec fallback local si la
+  configuration manque et CSP limitée aux domaines MapTiler ;
+- le conteneur MapLibre conserve une hauteur réelle afin de déclencher le chargement des tuiles
+  vectorielles en production ;
+- `SireneCompanyRegistryProvider` interroge l’API officielle INSEE uniquement par SIREN ou SIRET,
+  transmet la clé par en-tête, valide la réponse et n’invente ni secteur ni identifiant ;
+- `HunterContactVerificationProvider` appelle Email Verifier par en-tête secret, normalise les six
+  statuts Hunter, pseudonymise la référence de provenance et respecte le refus de traitement 451 ;
+- les deux adaptateurs réels utilisent les jobs idempotents, les quotas par organisation, les
+  sources et les métadonnées `mock: false` existants ;
+- les clés, URL et sélecteurs SIRENE/Hunter sont présents dans Vercel Production et Preview ; leur
+  première recette métier attend une entreprise avec identifiant légal et un contact autorisé.
+
 ## Vérifications
 
 | Commande                         | Résultat actuel                                                                 |
 | -------------------------------- | ------------------------------------------------------------------------------- |
 | `npm run lint`                   | Réussi — 0 erreur, 0 avertissement                                              |
 | `npm run typecheck`              | Réussi                                                                          |
-| `npm test`                       | Réussi — 20 fichiers, 161 tests                                                 |
+| `npm test`                       | Réussi — 23 fichiers, 176 tests                                                 |
 | `npm run format:check`           | Réussi                                                                          |
 | `npm run build`                  | Réussi — routes des Phases 0 à 9 générées avec Next.js 16.2.11                  |
 | `npm run test:e2e`               | Réussi — 5 scénarios publics, 1 scénario authentifié conditionnel ignoré        |
@@ -424,7 +439,9 @@ configurées dans Vercel pour Production et Preview :
 - `SUPABASE_SERVICE_ROLE_KEY` ;
 - `AI_PROVIDER`, `OPENAI_API_KEY` et `AI_DEFAULT_MODEL` ;
 - `MAP_TILES_API_KEY`, utilisée comme clé navigateur MapTiler ;
-- `NEXT_PUBLIC_MAP_STYLE_URL` reste un override HTTPS facultatif du style Streets v4.
+- `NEXT_PUBLIC_MAP_STYLE_URL` reste un override HTTPS facultatif du style Streets v4 ;
+- `COMPANY_REGISTRY_PROVIDER`, `SIRENE_API_KEY` et `SIRENE_API_BASE_URL` ;
+- `CONTACT_VERIFICATION_PROVIDER` et `HUNTER_API_KEY`.
 
 Les secrets runtime suivants restent manquants :
 
@@ -448,9 +465,7 @@ Variables optionnelles ou réservées aux autres providers :
 - `MAIL_WEBHOOK_SECRET` pour le webhook générique/mock ;
 - `SUPABASE_DATABASE_URL` pour automatiser les migrations, non requise au runtime ;
 - `GOOGLE_MAPS_API_KEY` et `OVERTURE_DATA_URL` pour les providers Places réels ;
-- `SIRENE_API_KEY` et `SIRENE_API_BASE_URL` ;
-- `HUNTER_API_KEY` ;
-- `DROPCONTACT_API_KEY`.
+- `DROPCONTACT_API_KEY` ;
 - `SENTRY_DSN`, réservé à une future télémétrie externe explicitement validée.
 
 Les sélecteurs `AI_PROVIDER`, `COMPANY_REGISTRY_PROVIDER`, `CONTACT_VERIFICATION_PROVIDER` et
@@ -490,12 +505,13 @@ des Phases 6 à 9 reste utilisable sans appel externe ni coût.
 
 ## Après la Phase 9
 
-Le cahier des charges fourni s’arrête à la Phase 9. Aucune Phase 10 n’est définie et aucun provider
-externe supplémentaire n’a été commencé.
+Le cahier des charges fourni s’arrête à la Phase 9. Aucune Phase 10 n’est définie. MapTiler,
+SIRENE et Hunter sont désormais branchés après la livraison du MVP ; les autres providers restent
+différés.
 
 ## Prochaine étape
 
-**Configuration et acceptation production.** La prochaine intervention doit compléter les
-variables Vercel obligatoires, activer la protection Supabase Auth contre les mots de passe
-compromis, qualifier les trois avis npm, rejouer le smoke test de production et obtenir le go/no-go
-du propriétaire. Les providers réels restent une décision post-MVP explicite.
+**Recette métier des providers activés.** La prochaine intervention doit vérifier SIRENE sur une
+fiche disposant d’un SIREN ou SIRET réel, puis Hunter sur un contact professionnel autorisé. En
+parallèle restent à compléter `APP_ENCRYPTION_KEY` et `CRON_SECRET`, la protection Supabase Auth et
+la qualification des trois avis npm avant le go/no-go du propriétaire.

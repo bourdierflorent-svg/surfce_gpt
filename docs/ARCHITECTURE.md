@@ -32,9 +32,9 @@ src/features/inbox/              Conversations, classification, résumé et rép
 src/features/opportunities/      Pipeline, tâches, rendez-vous, propositions et automatisations
 src/features/analytics/          Agrégation, filtres, KPI et vigie d’exploitation
 src/providers/places/            Contrat provider et implémentation mock
-src/providers/registries/        Contrat registre et implémentation mock
+src/providers/registries/        Contrat registre, mock et adaptateur INSEE SIRENE
 src/providers/enrichment/        Contrat analyse website et implémentation mock
-src/providers/contacts/          Contrat vérification e-mail et mock
+src/providers/contacts/          Contrat vérification e-mail, mock et adaptateur Hunter
 src/providers/mail/              Contrat mail, mock, Gmail et Microsoft Graph
 src/providers/ai/                Contrat IA et implémentation déterministe mock
 src/components/map/              Rendu MapLibre, style MapTiler et fallback GeoJSON local
@@ -52,8 +52,10 @@ supabase/tests/                  Tests pgTAP exécutés contre PostgreSQL
 tests/                           Tests unitaires et invariants statiques
 ```
 
-Les providers Google Workspace et Microsoft 365 sont les premières implémentations réseau. Ils ne
-sont instanciés qu’après déchiffrement serveur d’un token lié à une boîte autorisée.
+Les providers Google Workspace et Microsoft 365 ne sont instanciés qu’après déchiffrement serveur
+d’un token lié à une boîte autorisée. SIRENE et Hunter sont les adaptateurs réseau d’enrichissement
+activables par sélecteur : leurs clés restent côté serveur, leurs réponses sont validées par Zod et
+leurs appels passent par les quotas distribués.
 
 ## Flux d’authentification
 
@@ -433,10 +435,10 @@ ajouter de couche visuelle décorative à des états opérationnels.
 
 ## Décisions différées
 
-- implémentations réelles SIRENE, website, Hunter, Dropcontact et OpenAI : après configuration et
+- implémentations réelles website, Places, Dropcontact et OpenAI : après configuration et
   validation de leurs conditions d’usage ;
-- providers réels Places, SIRENE, Hunter, Dropcontact et OpenAI : après validation de leurs coûts
-  et conditions d’usage ;
+- validation fonctionnelle SIRENE et Hunter sur une entreprise identifiée et un contact réel
+  autorisé : dès que ces données existent dans SURFCE ;
 - activation des crons de production : après ajout de `CRON_SECRET` et
   `SUPABASE_SERVICE_ROLE_KEY` dans Vercel ;
 - éventuelle télémétrie externe : après choix explicite du fournisseur, de la région et des règles

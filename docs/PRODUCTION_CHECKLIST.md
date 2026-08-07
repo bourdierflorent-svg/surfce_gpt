@@ -65,6 +65,14 @@ revue de sécurité.
 
 ## Providers externes — optionnels et fermés par défaut
 
+SIRENE et Hunter :
+
+- [x] adaptateurs serveur, sélecteurs et validation des réponses implémentés ;
+- [x] clés, URL SIRENE et sélecteurs présents dans Vercel Production et Preview ;
+- [x] secrets transmis par en-tête et absents des références de provenance ;
+- [ ] vérifier SIRENE sur une fiche disposant d’un SIREN ou SIRET réel ;
+- [ ] vérifier Hunter sur un contact professionnel autorisé et contrôler le débit de crédits.
+
 Google Workspace :
 
 - [ ] `GOOGLE_CLIENT_ID` et `GOOGLE_CLIENT_SECRET` ;
@@ -79,9 +87,9 @@ Microsoft 365 :
 - [ ] permissions Graph minimales et `MICROSOFT_WEBHOOK_CLIENT_STATE` ;
 - [ ] subscription et renouvellement validés.
 
-Places, SIRENE, Hunter, Dropcontact et OpenAI restent désactivés tant que leurs coûts, conditions
-d’usage, quotas et clés n’ont pas reçu une validation explicite. Le mode mock reste le fallback
-attendu.
+Places, Dropcontact et OpenAI restent désactivés tant que leurs coûts, conditions d’usage, quotas
+et clés n’ont pas reçu une validation explicite. Le mode mock reste le fallback attendu. SIRENE et
+Hunter sont branchés mais leur premier appel métier réel reste un contrôle de recette explicite.
 
 ## Smoke test après déploiement
 

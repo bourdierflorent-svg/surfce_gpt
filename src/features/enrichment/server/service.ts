@@ -224,7 +224,8 @@ export async function verifyCompanyRegistry(
       companyId,
       fieldName: "registry_record",
       provider: result.provider,
-      externalReference: result.legalName.externalReference ?? `mock-registry:${companyId}`,
+      externalReference: result.legalName.externalReference ?? `${result.provider}:${companyId}`,
+      sourceUrl: result.legalName.sourceUrl,
       rawValue: result as unknown as Json,
       normalizedValue: {
         legal_name: result.legalName.value,
@@ -235,13 +236,22 @@ export async function verifyCompanyRegistry(
         sector: result.sector.value,
         headquarters_city: result.headquartersCity.value,
       },
-      confidence: result.legalName.confidence,
+      confidence: Math.max(
+        result.legalName.confidence,
+        result.siren.confidence,
+        result.primarySiret.confidence,
+      ),
       isInferred: false,
-      metadata: { mock: true, unknown_values_are_null: true },
+      metadata: {
+        mock: result.provider.startsWith("mock_"),
+        unknown_values_are_null: true,
+      },
     });
     const { error: companyError } = await supabase
       .from("companies")
       .update({
+        siren: company.siren ?? result.siren.value,
+        primary_siret: company.primary_siret ?? result.primarySiret.value,
         legal_form: company.legal_form ?? result.legalForm.value,
         activity_code: company.activity_code ?? result.activityCode.value,
         last_verified_at: new Date().toISOString(),

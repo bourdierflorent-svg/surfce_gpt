@@ -22,7 +22,7 @@ export interface ContactVerificationResult {
   reason: string;
   estimatedCost: number;
   reused: boolean;
-  mock: true;
+  mock: boolean;
 }
 
 export async function verifyContactEmail(
@@ -74,7 +74,7 @@ export async function verifyContactEmail(
     entityType: "contact",
     entityId: contact.id,
     input: input as Json,
-    estimatedCost: 0,
+    estimatedCost: provider.estimatedCost,
   });
   if (started.reused && started.job.output) {
     return { ...(started.job.output as unknown as ContactVerificationResult), reused: true };
@@ -113,7 +113,7 @@ export async function verifyContactEmail(
       last_verified_at: result.checkedAt,
       confidence: result.confidence,
       is_inferred: false,
-      metadata: { mock: true, estimated_cost: 0 },
+      metadata: { mock: result.mock, estimated_cost: result.estimatedCost },
     };
     const { data: existingSource } = await supabase
       .from("data_sources")
@@ -150,9 +150,9 @@ export async function verifyContactEmail(
       status: result.status,
       confidence: result.confidence,
       reason: result.reason,
-      estimatedCost: 0,
+      estimatedCost: result.estimatedCost,
       reused: false,
-      mock: true,
+      mock: result.mock,
     };
     await completeProviderJob(supabase, started.job.id, output as unknown as Json);
     return output;

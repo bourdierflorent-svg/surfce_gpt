@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import { readPublicMapConfig } from "@/lib/maps/config";
@@ -36,5 +39,13 @@ describe("MapLibre style configuration", () => {
     expect(
       readPublicMapConfig({ NEXT_PUBLIC_MAP_STYLE_URL: "http://maps.example.com/style.json" }),
     ).toBeNull();
+  });
+
+  it("keeps a real map height after MapLibre applies its relative container rule", () => {
+    const component = readFileSync(
+      join(process.cwd(), "src/components/map/discovery-map.tsx"),
+      "utf8",
+    );
+    expect(component).toContain('className="h-full min-h-[31rem] w-full"');
   });
 });

@@ -348,7 +348,7 @@ export function DiscoveryMap({
       aria-label="Carte interactive des sociétés et de la zone de recherche"
       role="region"
     >
-      <div ref={containerRef} className="absolute inset-0" />
+      <div ref={containerRef} className="h-full min-h-[31rem] w-full" />
       {usingConfiguredStyle && mapConfig?.provider === "maptiler" ? (
         <a
           href="https://www.maptiler.com/"

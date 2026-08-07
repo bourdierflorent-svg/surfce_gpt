@@ -169,7 +169,8 @@ La Phase 3 livre :
 - une carte MapLibre utilisant MapTiler Streets v4 lorsque `MAP_TILES_API_KEY` est configurée,
   avec un fond vectoriel local de secours ;
 - la recherche par texte, catégorie, arrondissement, rayon et polygone ;
-- dix sociétés parisiennes explicitement fictives avec domaines `.example` ;
+- un provider de découverte mock avec candidats `.example`, sans fixture commerciale persistante
+  en production ;
 - une liste synchronisée, la sélection multiple et le détail rapide ;
 - l’import unitaire ou par lot avec déduplication atomique ;
 - les recherches sauvegardées et rejouables ;
@@ -184,7 +185,10 @@ pourront donc être ajoutés sans réécrire l’Explorer.
 
 La Phase 4 livre :
 
-- `MockCompanyRegistryProvider` et `MockWebsiteEnrichmentProvider`, sans trafic distant ;
+- `MockCompanyRegistryProvider`, `SireneCompanyRegistryProvider` et
+  `MockWebsiteEnrichmentProvider` derrière les mêmes contrats ;
+- l’appel SIRENE serveur par SIREN ou SIRET, authentifié par en-tête et limité au domaine officiel
+  de l’INSEE ;
 - des jobs idempotents avec statut, limite de 5 essais, erreur et coût estimé ;
 - une provenance par champ pour la vérification registre et l’analyse web simulée ;
 - un persona JSON validé par Zod, versionné et explicitement limité aux sources disponibles ;
@@ -199,12 +203,13 @@ La fiche entreprise utilise les onglets `Persona`, `Recommandations` et `Donnée
 actions restent réservées aux administrateurs, responsables commerciaux et commerciaux assignés.
 Les autres rôles conservent un accès en lecture via RLS.
 
-## Contacts et campagnes mock
+## Contacts et campagnes
 
 La Phase 5 livre :
 
-- quinze contacts professionnels fictifs sur des domaines `.example` ;
-- un provider de vérification d’adresse mock et sa traçabilité dans `data_sources` ;
+- les fixtures de contacts retirées de la production après validation ;
+- les providers de vérification mock et Hunter, avec statut, score, provenance et traçabilité dans
+  `data_sources` ;
 - une liste globale de suppression portant sur l’e-mail, le contact, la société ou le domaine ;
 - une boîte d’expédition mock sans token OAuth ni livraison réelle ;
 - la création d’une campagne et d’une séquence de quatre étapes à délais configurables ;
@@ -214,9 +219,10 @@ La Phase 5 livre :
 - un contrôle atomique de l’opposition avant l’inscription et juste avant l’envoi ;
 - une clé de déduplication unique et une RPC transactionnelle empêchant tout double envoi.
 
-Le scénario complet s’exécute à coût nul. Les identifiants de message et de fil sont déterministes
-et explicitement marqués `mock`. La route cron est protégée par `CRON_SECRET` et reste fail-closed
-tant que ce secret n’est pas fourni.
+Le scénario de campagne mock s’exécute à coût nul. Hunter consomme les crédits du compte configuré
+et ne reçoit que l’adresse à vérifier. Les identifiants de message et de fil mock sont
+déterministes. La route cron est protégée par `CRON_SECRET` et reste fail-closed tant que ce secret
+n’est pas fourni.
 
 ## Gmail, Microsoft 365 et inbox
 
@@ -344,8 +350,9 @@ l’automatisation inbox → opportunité.
 `MockContactVerificationProvider`, `MockMailProvider` et `MockAiProvider` sont implémentés derrière
 des interfaces. Ils n’effectuent aucun appel distant et annoncent un coût nul. `GmailMailProvider`
 et `MicrosoftMailProvider` implémentent désormais le même contrat ; ils restent inactifs sans
-consentement OAuth. Places, SIRENE, Hunter, Dropcontact et OpenAI restent désactivés tant que leurs
-clés et règles d’usage ne sont pas configurées.
+consentement OAuth. SIRENE et Hunter disposent aussi de leurs adaptateurs réels, activés uniquement
+par leurs sélecteurs et secrets serveur. Places, Dropcontact et OpenAI restent sur leur fallback
+mock tant que leurs implémentations et règles d’usage ne sont pas validées.
 
 ## Limitations connues
 
