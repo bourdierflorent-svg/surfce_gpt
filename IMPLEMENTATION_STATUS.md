@@ -356,7 +356,12 @@ racine. Aucun code métier antérieur n’a donc été supprimé ou remplacé.
 - ancien prototype découvert sur la nouvelle cible et préservé sans suppression dans le schéma
   privé `legacy` : 3 lieux et 12 prospects, plus leurs tables associées, hors de l’API publique ;
 - variables Vercel application/Supabase remplacées pour Production et Preview sans modifier les
-  variables providers déjà présentes.
+  variables providers déjà présentes ;
+- production validée sur le commit `6fa93fb9e7e3` : liveness 200, readiness 200, en-têtes de
+  sécurité actifs et parcours propriétaire Playwright entièrement réussi ;
+- fixtures commerciales de validation retirées après le test : compte et organisation SURFCE
+  conservés, quatre fiches de lieux conservées sans champs inventés, offres de démonstration et
+  pipeline fictif supprimés, prototype historique `legacy` inchangé.
 
 ## Vérifications
 
@@ -398,8 +403,10 @@ racine. Aucun code métier antérieur n’a donc été supprimé ou remplacé.
 | Schéma distant Phase 9           | Réussi — 2 tables RLS, 2 migrations, 9 quotas et 0 warning performance          |
 | GitHub Actions                   | Réussi — workflow `Quality` du commit Phase 9 entièrement vert                  |
 | Production Vercel                | Déployée — liveness 200 sur le commit `583f75997fb0`, en-têtes sécurité actifs  |
-| Migration Supabase `tzv…`        | Réussi — 36 migrations, seed, SQL lint, admin et lecture RLS validés            |
-| Readiness Vercel                 | À revalider après redéploiement avec les nouvelles variables publiques          |
+| Migration Supabase `tzv…`        | Réussi — migrations, seed de validation, SQL lint, admin et lecture RLS validés |
+| Parcours authentifié production  | Réussi — propriétaire, pages clés et blocage d’opposition vérifiés              |
+| Nettoyage des fixtures           | Réussi — données fictives retirées après validation, socle SURFCE conservé      |
+| Readiness Vercel                 | 200 — base publique et opérations service configurées                           |
 
 Les invariants RLS sont aussi contrôlés par Vitest. Les scénarios distants ont été exécutés avec des
 utilisateurs fictifs dans des transactions ensuite annulées. Le test pgTAP local reste disponible

@@ -19,9 +19,12 @@ Supabase Auth ou les consoles providers.
 - [x] aucun nouveau warning Security Advisor introduit par les quotas ;
 - [x] workflow GitHub `Quality` vert sur le commit Phase 9 ;
 - [x] commit Phase 9 servi par Vercel avec liveness 200 et en-têtes de sécurité actifs ;
-- [x] nouveau projet Supabase officiel migré avec 36 migrations et seed complet ;
+- [x] nouveau projet Supabase officiel aligné sur 37 migrations, nettoyage inclus ;
 - [x] prototype préexistant conservé dans le schéma privé `legacy` sans suppression ;
-- [x] connexion et lecture RLS du compte propriétaire administrateur validées.
+- [x] connexion et lecture RLS du compte propriétaire administrateur validées ;
+- [x] liveness, readiness, en-têtes de sécurité et parcours Playwright authentifié validés ;
+- [x] fixtures commerciales et traces providers `mock` supprimées après validation ;
+- [x] quatre fiches de lieux conservées sans offre ni champ commercial inventé.
 
 ## Variables Vercel — obligatoires pour le runtime complet
 
