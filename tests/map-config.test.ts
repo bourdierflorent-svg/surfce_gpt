@@ -14,15 +14,18 @@ describe("MapLibre style configuration", () => {
     expect(styleUrl.origin).toBe("https://api.maptiler.com");
     expect(styleUrl.pathname).toBe("/maps/streets-v4/style.json");
     expect(styleUrl.searchParams.get("key")).toBe("maptiler-browser-key");
+    expect(config?.rasterTileUrl).toBe(
+      "https://api.maptiler.com/maps/streets-v4/{z}/{x}/{y}.png?key=maptiler-browser-key",
+    );
   });
 
   it("adds the key to an explicit MapTiler style and accepts another HTTPS provider", () => {
-    expect(
-      readPublicMapConfig({
-        MAP_TILES_API_KEY: "maptiler-browser-key",
-        NEXT_PUBLIC_MAP_STYLE_URL: "https://api.maptiler.com/maps/bright-v2/style.json",
-      })?.styleUrl,
-    ).toContain("key=maptiler-browser-key");
+    const mapTilerConfig = readPublicMapConfig({
+      MAP_TILES_API_KEY: "maptiler-browser-key",
+      NEXT_PUBLIC_MAP_STYLE_URL: "https://api.maptiler.com/maps/bright-v2/style.json",
+    });
+    expect(mapTilerConfig?.styleUrl).toContain("key=maptiler-browser-key");
+    expect(mapTilerConfig?.rasterTileUrl).toContain("/maps/bright-v2/{z}/{x}/{y}.png?");
 
     expect(
       readPublicMapConfig({

@@ -366,10 +366,10 @@ racine. Aucun code métier antérieur n’a donc été supprimé ou remplacé.
 
 ## Activation MapTiler, SIRENE et Hunter
 
-- MapTiler Streets v4 est chargé côté serveur depuis `MAP_TILES_API_KEY`, avec fallback local si la
-  configuration manque et CSP limitée aux domaines MapTiler ;
+- MapTiler Streets v4 est chargé en tuiles raster depuis `MAP_TILES_API_KEY`, avec fallback local
+  si la configuration manque et CSP limitée aux domaines MapTiler ;
 - le conteneur MapLibre conserve une hauteur réelle afin de déclencher le chargement des tuiles
-  vectorielles en production ;
+  Streets en production ;
 - `SireneCompanyRegistryProvider` interroge l’API officielle INSEE uniquement par SIREN ou SIRET,
   transmet la clé par en-tête, valide la réponse et n’invente ni secteur ni identifiant ;
 - `HunterContactVerificationProvider` appelle Email Verifier par en-tête secret, normalise les six

@@ -43,6 +43,26 @@ const localMapStyle: StyleSpecification = {
   layers: [{ id: "background", type: "background", paint: { "background-color": "#eaf1f5" } }],
 };
 
+function configuredMapStyle(config: PublicMapConfig): string | StyleSpecification {
+  if (config.provider !== "maptiler" || !config.rasterTileUrl) return config.styleUrl;
+
+  return {
+    version: 8,
+    sources: {
+      "maptiler-streets": {
+        type: "raster",
+        tiles: [config.rasterTileUrl],
+        tileSize: 512,
+        minzoom: 0,
+        maxzoom: 22,
+        attribution:
+          '<a href="https://www.maptiler.com/copyright/" target="_blank">© MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">© OpenStreetMap contributors</a>',
+      },
+    },
+    layers: [{ id: "maptiler-streets", type: "raster", source: "maptiler-streets" }],
+  };
+}
+
 const guideData = {
   type: "FeatureCollection",
   features: [
@@ -183,7 +203,7 @@ export function DiscoveryMap({
       center: [initial.center.longitude, initial.center.latitude],
       zoom: 11.7,
       attributionControl: false,
-      style: mapConfig?.styleUrl ?? localMapStyle,
+      style: mapConfig ? configuredMapStyle(mapConfig) : localMapStyle,
     });
 
     map.addControl(new NavigationControl({ showCompass: false }), "top-right");

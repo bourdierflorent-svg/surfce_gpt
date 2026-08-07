@@ -5,6 +5,7 @@ export type PublicMapProvider = "maptiler" | "external";
 export interface PublicMapConfig {
   provider: PublicMapProvider;
   styleUrl: string;
+  rasterTileUrl?: string;
 }
 
 const defaultMapTilerStyleUrl = "https://api.maptiler.com/maps/streets-v4/style.json";
@@ -24,6 +25,13 @@ function isMapTilerHost(hostname: string) {
   return hostname === "maptiler.com" || hostname.endsWith(".maptiler.com");
 }
 
+function mapTilerRasterTileUrl(styleUrl: URL): string | undefined {
+  const match = styleUrl.pathname.match(/^\/maps\/([a-zA-Z0-9_-]+)\/style\.json$/);
+  const apiKey = styleUrl.searchParams.get("key")?.trim();
+  if (!match?.[1] || !apiKey) return undefined;
+  return `${styleUrl.origin}/maps/${match[1]}/{z}/{x}/{y}.png?key=${encodeURIComponent(apiKey)}`;
+}
+
 export function readPublicMapConfig(
   environment: Environment = process.env,
 ): PublicMapConfig | null {
@@ -40,6 +48,7 @@ export function readPublicMapConfig(
     return {
       provider: isMapTiler ? "maptiler" : "external",
       styleUrl: explicitStyle.toString(),
+      ...(isMapTiler ? { rasterTileUrl: mapTilerRasterTileUrl(explicitStyle) } : {}),
     };
   }
 
@@ -47,5 +56,9 @@ export function readPublicMapConfig(
 
   const styleUrl = new URL(defaultMapTilerStyleUrl);
   styleUrl.searchParams.set("key", apiKey);
-  return { provider: "maptiler", styleUrl: styleUrl.toString() };
+  return {
+    provider: "maptiler",
+    styleUrl: styleUrl.toString(),
+    rasterTileUrl: mapTilerRasterTileUrl(styleUrl),
+  };
 }
