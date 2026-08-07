@@ -2,6 +2,7 @@ import { requireAppAuthContext } from "@/features/auth/server/auth-context";
 import { ExplorerWorkbench } from "@/features/discovery/components/explorer-workbench";
 import type { DiscoverySearchInput } from "@/features/discovery/schemas";
 import { listSavedDiscoverySearches, searchDiscovery } from "@/features/discovery/server/service";
+import { readPublicMapConfig } from "@/lib/maps/config";
 import { can } from "@/lib/permissions/roles";
 
 export const defaultDiscoverySearch: DiscoverySearchInput = {
@@ -30,6 +31,7 @@ export default async function ExplorePage() {
         canSave={!context.isPreview}
         initialResponse={initialResponse}
         initialSearch={defaultDiscoverySearch}
+        mapConfig={readPublicMapConfig()}
         savedSearches={savedSearches}
       />
     </div>

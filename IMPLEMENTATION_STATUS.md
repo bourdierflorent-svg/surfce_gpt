@@ -19,7 +19,7 @@ racine. Aucun code métier antérieur n’a donc été supprimé ou remplacé.
 | Phase 0 — Audit et socle             | Implémentée | Next.js App Router, TS strict, Tailwind, ESLint, Prettier, Vitest, structure, design system, login et shell |
 | Phase 1 — Auth, organisation et RLS  | Déployée    | Supabase SSR, profils, organisations, memberships, rôles, navigation filtrée, migrations, seed et tests RLS |
 | Phase 2 — Établissements et offres   | Déployée    | CRUD, offres, assets privés, galerie, validations, RLS et seed Stargazing                                   |
-| Phase 3 — Entreprises et Explorer    | Déployée    | MapLibre local, provider mock, import dédupliqué, sources, fiches, RLS et PostGIS                           |
+| Phase 3 — Entreprises et Explorer    | Déployée    | MapLibre/MapTiler, fallback local, provider mock, import dédupliqué, sources, RLS et PostGIS                |
 | Phase 4 — Enrichissement et matching | Déployée    | Providers mock, jobs, persona Zod, validation humaine, score explicable et recommandations                  |
 | Phase 5 — Contacts et campagnes mock | Déployée    | Contacts, vérification, séquences, validation, planification, envoi mock et suppression atomique            |
 | Phase 6 — Gmail/Microsoft et inbox   | Déployée    | OAuth, tokens chiffrés, sync, webhooks, fils, qualification, réponses et arrêt automatique                  |
@@ -101,8 +101,9 @@ racine. Aucun code métier antérieur n’a donc été supprimé ou remplacé.
   explicitement fictives, sans appel externe ni coût ;
 - domaines `.example` et aucune coordonnée réelle de personne ;
 - cinq routes API Discovery : recherche, import unitaire, import batch, déduplication et sauvegarde ;
-- Explorer MapLibre avec fond vectoriel local, rayon, polygone cliquable, filtres, liste
-  synchronisée, sélection multiple et détail rapide ;
+- Explorer MapLibre avec MapTiler Streets v4 lorsque la clé est disponible, fallback vectoriel
+  local, rayon, polygone cliquable, filtres, liste synchronisée, sélection multiple et détail
+  rapide ;
 - alternative clavier pour appliquer un polygone Paris centre ;
 - recherches sauvegardées et route de rejeu `/explore/saved/[id]` ;
 - registre entreprises filtrable, fiche générale, implantations, opposition, attribution, scores et
@@ -422,7 +423,8 @@ configurées dans Vercel pour Production et Preview :
 - `NEXT_PUBLIC_SUPABASE_URL` et `NEXT_PUBLIC_SUPABASE_ANON_KEY` ;
 - `SUPABASE_SERVICE_ROLE_KEY` ;
 - `AI_PROVIDER`, `OPENAI_API_KEY` et `AI_DEFAULT_MODEL` ;
-- `MAP_TILES_API_KEY`.
+- `MAP_TILES_API_KEY`, utilisée comme clé navigateur MapTiler ;
+- `NEXT_PUBLIC_MAP_STYLE_URL` reste un override HTTPS facultatif du style Streets v4.
 
 Les secrets runtime suivants restent manquants :
 
@@ -445,7 +447,6 @@ Variables optionnelles ou réservées aux autres providers :
 
 - `MAIL_WEBHOOK_SECRET` pour le webhook générique/mock ;
 - `SUPABASE_DATABASE_URL` pour automatiser les migrations, non requise au runtime ;
-- `NEXT_PUBLIC_MAP_STYLE_URL` ;
 - `GOOGLE_MAPS_API_KEY` et `OVERTURE_DATA_URL` pour les providers Places réels ;
 - `SIRENE_API_KEY` et `SIRENE_API_BASE_URL` ;
 - `HUNTER_API_KEY` ;

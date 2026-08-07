@@ -37,7 +37,7 @@ src/providers/enrichment/        Contrat analyse website et implémentation mock
 src/providers/contacts/          Contrat vérification e-mail et mock
 src/providers/mail/              Contrat mail, mock, Gmail et Microsoft Graph
 src/providers/ai/                Contrat IA et implémentation déterministe mock
-src/components/map/              Rendu MapLibre et couches GeoJSON locales
+src/components/map/              Rendu MapLibre, style MapTiler et fallback GeoJSON local
 src/components/forms/            Associations accessibles entre labels, aides et erreurs
 src/lib/geo/                      Distance, cercle et inclusion polygonale
 src/lib/permissions/             Matrice de rôles centralisée

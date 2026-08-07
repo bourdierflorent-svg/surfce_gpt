@@ -29,6 +29,7 @@ import type {
   DiscoverySearchResponse,
   ImportResult,
 } from "@/features/discovery/types";
+import type { PublicMapConfig } from "@/lib/maps/config";
 import { cn } from "@/lib/utils";
 import type { SavedSearchRow } from "@/types/database";
 
@@ -50,6 +51,7 @@ interface ExplorerWorkbenchProps {
   canSave: boolean;
   initialResponse: DiscoverySearchResponse;
   initialSearch: DiscoverySearchInput;
+  mapConfig: PublicMapConfig | null;
   savedSearches: SavedSearchRow[];
 }
 
@@ -176,6 +178,7 @@ export function ExplorerWorkbench({
   canSave,
   initialResponse,
   initialSearch,
+  mapConfig,
   savedSearches,
 }: ExplorerWorkbenchProps) {
   const [searchInput, setSearchInput] = useState(initialSearch);
@@ -602,6 +605,7 @@ export function ExplorerWorkbench({
             candidates={response.results}
             center={center}
             focusedId={focusedId}
+            mapConfig={mapConfig}
             mode={searchInput.mode}
             onFocus={setFocusedId}
             onPolygonPoint={(point) =>

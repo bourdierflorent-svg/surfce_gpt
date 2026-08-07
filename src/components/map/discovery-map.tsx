@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
 import {
   AttributionControl,
   type GeoJSONSource,
@@ -9,6 +10,7 @@ import {
   type MapLayerMouseEvent,
   type MapMouseEvent,
   NavigationControl,
+  type StyleSpecification,
 } from "maplibre-gl";
 
 import {
@@ -18,11 +20,13 @@ import {
   type PolygonRing,
 } from "@/lib/geo/geometry";
 import type { DiscoveryCandidate } from "@/features/discovery/types";
+import type { PublicMapConfig } from "@/lib/maps/config";
 
 interface DiscoveryMapProps {
   candidates: DiscoveryCandidate[];
   center: GeoPoint;
   focusedId: string | null;
+  mapConfig: PublicMapConfig | null;
   mode: "radius" | "polygon";
   onFocus: (externalId: string) => void;
   onPolygonPoint: (point: [number, number]) => void;
@@ -32,6 +36,12 @@ interface DiscoveryMapProps {
 }
 
 type GeoJSONData = Exclude<Parameters<GeoJSONSource["setData"]>[0], string>;
+
+const localMapStyle: StyleSpecification = {
+  version: 8,
+  sources: {},
+  layers: [{ id: "background", type: "background", paint: { "background-color": "#eaf1f5" } }],
+};
 
 const guideData = {
   type: "FeatureCollection",
@@ -131,6 +141,7 @@ export function DiscoveryMap({
   candidates,
   center,
   focusedId,
+  mapConfig,
   mode,
   onFocus,
   onPolygonPoint,
@@ -140,6 +151,7 @@ export function DiscoveryMap({
 }: DiscoveryMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
+  const [usingConfiguredStyle, setUsingConfiguredStyle] = useState(Boolean(mapConfig));
   const modeRef = useRef(mode);
   const onFocusRef = useRef(onFocus);
   const onPolygonPointRef = useRef(onPolygonPoint);
@@ -163,43 +175,50 @@ export function DiscoveryMap({
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
     const initial = initialStateRef.current;
+    let configuredStyleFailed = false;
+    let mapReady = false;
+    setUsingConfiguredStyle(Boolean(mapConfig));
     const map = new MapLibreMap({
       container: containerRef.current,
       center: [initial.center.longitude, initial.center.latitude],
       zoom: 11.7,
       attributionControl: false,
-      style: {
-        version: 8,
-        sources: {},
-        layers: [
-          { id: "background", type: "background", paint: { "background-color": "#eaf1f5" } },
-        ],
-      },
+      style: mapConfig?.styleUrl ?? localMapStyle,
     });
 
     map.addControl(new NavigationControl({ showCompass: false }), "top-right");
     map.addControl(
       new AttributionControl({
         compact: true,
-        customAttribution: "Données fictives · fond local SURFCE",
+        customAttribution: mapConfig ? undefined : "Fond local SURFCE",
       }),
     );
+    map.on("error", () => {
+      if (!mapReady && mapConfig && !configuredStyleFailed) {
+        configuredStyleFailed = true;
+        setUsingConfiguredStyle(false);
+        map.setStyle(localMapStyle);
+      }
+    });
     map.on("load", () => {
-      map.addSource("guides", { type: "geojson", data: guideData });
-      map.addLayer({
-        id: "streets",
-        type: "line",
-        source: "guides",
-        filter: ["==", ["get", "kind"], "street"],
-        paint: { "line-color": "#cbd9df", "line-width": 1 },
-      });
-      map.addLayer({
-        id: "water",
-        type: "line",
-        source: "guides",
-        filter: ["==", ["get", "kind"], "water"],
-        paint: { "line-color": "#9bcfd3", "line-width": 13, "line-opacity": 0.6 },
-      });
+      mapReady = true;
+      if (!mapConfig || configuredStyleFailed) {
+        map.addSource("guides", { type: "geojson", data: guideData });
+        map.addLayer({
+          id: "streets",
+          type: "line",
+          source: "guides",
+          filter: ["==", ["get", "kind"], "street"],
+          paint: { "line-color": "#cbd9df", "line-width": 1 },
+        });
+        map.addLayer({
+          id: "water",
+          type: "line",
+          source: "guides",
+          filter: ["==", ["get", "kind"], "water"],
+          paint: { "line-color": "#9bcfd3", "line-width": 13, "line-opacity": 0.6 },
+        });
+      }
       map.addSource("search-area", {
         type: "geojson",
         data: areaData(initial.mode, initial.center, initial.radiusMeters, initial.polygon),
@@ -286,7 +305,7 @@ export function DiscoveryMap({
       map.remove();
       mapRef.current = null;
     };
-  }, []);
+  }, [mapConfig]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -325,10 +344,28 @@ export function DiscoveryMap({
 
   return (
     <div
-      ref={containerRef}
-      className="h-full min-h-[31rem] w-full"
-      aria-label="Carte des sociétés fictives et de la zone de recherche"
+      className="relative h-full min-h-[31rem] w-full"
+      aria-label="Carte interactive des sociétés et de la zone de recherche"
       role="region"
-    />
+    >
+      <div ref={containerRef} className="absolute inset-0" />
+      {usingConfiguredStyle && mapConfig?.provider === "maptiler" ? (
+        <a
+          href="https://www.maptiler.com/"
+          target="_blank"
+          rel="noreferrer"
+          className="absolute bottom-2 left-2 z-10 rounded bg-white/90 px-2 py-1 shadow-sm backdrop-blur"
+          aria-label="Fond de carte fourni par MapTiler"
+        >
+          <Image
+            src="https://api.maptiler.com/resources/logo.svg"
+            alt="MapTiler"
+            width={72}
+            height={22}
+            unoptimized
+          />
+        </a>
+      ) : null}
+    </div>
   );
 }

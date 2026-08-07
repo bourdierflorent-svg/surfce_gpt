@@ -8,6 +8,7 @@ import {
   listSavedDiscoverySearches,
   searchDiscovery,
 } from "@/features/discovery/server/service";
+import { readPublicMapConfig } from "@/lib/maps/config";
 import { can } from "@/lib/permissions/roles";
 import type { Json } from "@/types/database";
 
@@ -56,6 +57,7 @@ export default async function SavedExplorePage({ params }: SavedExplorePageProps
         canSave={!context.isPreview}
         initialResponse={initialResponse}
         initialSearch={input}
+        mapConfig={readPublicMapConfig()}
         savedSearches={savedSearches}
       />
     </div>

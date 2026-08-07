@@ -166,7 +166,8 @@ le rôle de l’utilisateur.
 
 La Phase 3 livre :
 
-- une carte MapLibre sans appel à un fond cartographique externe ;
+- une carte MapLibre utilisant MapTiler Streets v4 lorsque `MAP_TILES_API_KEY` est configurée,
+  avec un fond vectoriel local de secours ;
 - la recherche par texte, catégorie, arrondissement, rayon et polygone ;
 - dix sociétés parisiennes explicitement fictives avec domaines `.example` ;
 - une liste synchronisée, la sélection multiple et le détail rapide ;

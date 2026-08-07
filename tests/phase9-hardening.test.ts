@@ -39,6 +39,8 @@ describe("Phase 9 request hardening", () => {
     const policy = buildContentSecurityPolicy("nonce-test");
     expect(policy).toContain("script-src 'self' 'nonce-nonce-test' 'strict-dynamic'");
     expect(policy).toContain("worker-src 'self' blob:");
+    expect(policy).toContain("connect-src 'self'");
+    expect(policy).toContain("https://*.maptiler.com");
     expect(policy).toContain("object-src 'none'");
     expect(policy).toContain("frame-ancestors 'none'");
   });

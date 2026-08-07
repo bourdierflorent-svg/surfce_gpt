@@ -49,6 +49,11 @@ const nextConfig: NextConfig = {
         hostname: "**.supabase.co",
         pathname: "/storage/v1/**",
       },
+      {
+        protocol: "https",
+        hostname: "api.maptiler.com",
+        pathname: "/resources/**",
+      },
     ],
   },
 };
