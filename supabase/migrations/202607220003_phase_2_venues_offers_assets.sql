@@ -1,5 +1,58 @@
 begin;
 
+-- The replacement production project contained an earlier SURFCE prototype before the
+-- canonical migration history was installed. Preserve those records outside the API-exposed
+-- schema instead of dropping them. The column signature makes this fail closed if an unrelated
+-- or already-current `public.venues` table is encountered.
+create schema if not exists legacy;
+revoke all on schema legacy from public, anon, authenticated;
+
+do $$
+declare
+  legacy_table text;
+  legacy_tables constant text[] := array[
+    'venues',
+    'prospects',
+    'sequences',
+    'email_sends',
+    'email_replies',
+    'activity_log',
+    'settings'
+  ];
+begin
+  if to_regclass('public.venues') is not null then
+    if not exists (
+      select 1
+      from information_schema.columns
+      where table_schema = 'public'
+        and table_name = 'venues'
+        and column_name = 'active'
+    ) or exists (
+      select 1
+      from information_schema.columns
+      where table_schema = 'public'
+        and table_name = 'venues'
+        and column_name = 'organization_id'
+    ) or to_regclass('public.prospects') is null then
+      raise exception
+        'public.venues exists but does not match the recognized SURFCE prototype schema';
+    end if;
+
+    foreach legacy_table in array legacy_tables loop
+      if to_regclass(format('public.%I', legacy_table)) is not null then
+        if to_regclass(format('legacy.%I', legacy_table)) is not null then
+          raise exception 'legacy.% already exists', legacy_table;
+        end if;
+        execute format('alter table public.%I set schema legacy', legacy_table);
+      end if;
+    end loop;
+  end if;
+end;
+$$;
+
+comment on schema legacy is
+  'Archived pre-migration SURFCE prototype tables; inaccessible through the public API.';
+
 create table public.venues (
   id uuid primary key default gen_random_uuid(),
   organization_id uuid not null references public.organizations(id) on delete cascade,

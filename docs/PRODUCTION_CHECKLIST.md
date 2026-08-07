@@ -18,14 +18,17 @@ Supabase Auth ou les consoles providers.
 - [x] aucune alerte Performance Advisor au-dessus du niveau informationnel ;
 - [x] aucun nouveau warning Security Advisor introduit par les quotas ;
 - [x] workflow GitHub `Quality` vert sur le commit Phase 9 ;
-- [x] commit Phase 9 servi par Vercel avec liveness 200 et en-têtes de sécurité actifs.
+- [x] commit Phase 9 servi par Vercel avec liveness 200 et en-têtes de sécurité actifs ;
+- [x] nouveau projet Supabase officiel migré avec 36 migrations et seed complet ;
+- [x] prototype préexistant conservé dans le schéma privé `legacy` sans suppression ;
+- [x] connexion et lecture RLS du compte propriétaire administrateur validées.
 
 ## Variables Vercel — obligatoires pour le runtime complet
 
-- [ ] `NEXT_PUBLIC_APP_URL=https://surfce-gpt.vercel.app` ;
-- [ ] `NEXT_PUBLIC_SUPABASE_URL` ;
-- [ ] `NEXT_PUBLIC_SUPABASE_ANON_KEY` ;
-- [ ] `SUPABASE_SERVICE_ROLE_KEY` ;
+- [x] `NEXT_PUBLIC_APP_URL=https://surfce-gpt.vercel.app` ;
+- [x] `NEXT_PUBLIC_SUPABASE_URL` ;
+- [x] `NEXT_PUBLIC_SUPABASE_ANON_KEY` ;
+- [x] `SUPABASE_SERVICE_ROLE_KEY` ;
 - [ ] `APP_ENCRYPTION_KEY`, 32 octets aléatoires encodés en Base64 ;
 - [ ] `CRON_SECRET`, distinct de toutes les autres clés.
 

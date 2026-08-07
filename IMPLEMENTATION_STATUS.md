@@ -1,6 +1,6 @@
 # État d’implémentation SURFCE
 
-Dernière mise à jour : 23 juillet 2026
+Dernière mise à jour : 7 août 2026
 
 ## Audit initial
 
@@ -350,7 +350,13 @@ racine. Aucun code métier antérieur n’a donc été supprimé ou remplacé.
 - Security Advisor sans nouvelle alerte Phase 9 ; les six RPC historiques contrôlées et la
   protection Auth à activer restent documentées ;
 - Performance Advisor sans alerte au-dessus du niveau informationnel après séparation des
-  politiques RLS d’administration.
+  politiques RLS d’administration ;
+- projet Supabase officiel remplacé par `tzveuhvdlfytajbzavyt` : 36 migrations alignées, seed
+  complet, compte propriétaire recréé et connexion RLS administrateur validée ;
+- ancien prototype découvert sur la nouvelle cible et préservé sans suppression dans le schéma
+  privé `legacy` : 3 lieux et 12 prospects, plus leurs tables associées, hors de l’API publique ;
+- variables Vercel application/Supabase remplacées pour Production et Preview sans modifier les
+  variables providers déjà présentes.
 
 ## Vérifications
 
@@ -392,7 +398,8 @@ racine. Aucun code métier antérieur n’a donc été supprimé ou remplacé.
 | Schéma distant Phase 9           | Réussi — 2 tables RLS, 2 migrations, 9 quotas et 0 warning performance          |
 | GitHub Actions                   | Réussi — workflow `Quality` du commit Phase 9 entièrement vert                  |
 | Production Vercel                | Déployée — liveness 200 sur le commit `583f75997fb0`, en-têtes sécurité actifs  |
-| Readiness Vercel                 | 503 attendu — configuration runtime obligatoire encore absente                  |
+| Migration Supabase `tzv…`        | Réussi — 36 migrations, seed, SQL lint, admin et lecture RLS validés            |
+| Readiness Vercel                 | À revalider après redéploiement avec les nouvelles variables publiques          |
 
 Les invariants RLS sont aussi contrôlés par Vitest. Les scénarios distants ont été exécutés avec des
 utilisateurs fictifs dans des transactions ensuite annulées. Le test pgTAP local reste disponible
@@ -401,14 +408,17 @@ pour une future installation Docker.
 ## Variables manquantes
 
 La connexion publique Supabase et `NEXT_PUBLIC_APP_URL=https://surfce-gpt.vercel.app` sont
-configurées localement dans `.env.local`, fichier ignoré par Git. Les valeurs suivantes restent à
-ajouter ou à confirmer dans l’environnement Vercel :
+configurées localement dans `.env.local`, fichier ignoré par Git. Les valeurs suivantes sont aussi
+configurées dans Vercel pour Production et Preview :
 
 - `NEXT_PUBLIC_APP_URL=https://surfce-gpt.vercel.app` ;
 - `NEXT_PUBLIC_SUPABASE_URL` et `NEXT_PUBLIC_SUPABASE_ANON_KEY` ;
-- `SUPABASE_SERVICE_ROLE_KEY` ;
+- `SUPABASE_SERVICE_ROLE_KEY`.
+
+Les secrets runtime suivants restent manquants :
+
 - `APP_ENCRYPTION_KEY`, clé aléatoire de 32 octets encodée en Base64 ;
-- `CRON_SECRET`.
+- `CRON_SECRET`, distinct de toutes les autres clés.
 
 Pour connecter Google Workspace :
 

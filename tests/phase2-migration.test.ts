@@ -53,6 +53,15 @@ describe("Phase 2 database model", () => {
     expect(migration).toContain("venue_assets_storage_insert_editors");
   });
 
+  it("archives only the recognized pre-migration prototype without deleting it", () => {
+    expect(migration).toContain("create schema if not exists legacy");
+    expect(migration).toContain("column_name = 'active'");
+    expect(migration).toContain("column_name = 'organization_id'");
+    expect(migration).toContain("alter table public.%i set schema legacy");
+    expect(migration).toContain("does not match the recognized surfce prototype schema");
+    expect(migration).not.toContain("drop table public.venues");
+  });
+
   it("seeds the four editable Stargazing venues and offers", () => {
     for (const venue of ["little room", "deflower", "fresh touch", "giulia"]) {
       expect(seed).toContain(`'${venue}'`);

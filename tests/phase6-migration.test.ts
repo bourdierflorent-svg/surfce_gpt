@@ -67,6 +67,13 @@ describe("Phase 6 database model", () => {
     expect(seed).toContain("inbound_reply:interested");
   });
 
+  it("seeds provider replies after their mailbox and campaign dependencies", () => {
+    const mailboxSeed = seed.indexOf("insert into public.mailboxes");
+    const phase6ReplySeed = seed.indexOf("seed_phase6_demo");
+    expect(mailboxSeed).toBeGreaterThanOrEqual(0);
+    expect(phase6ReplySeed).toBeGreaterThan(mailboxSeed);
+  });
+
   it("contains rollback-only Phase 6 assertions", () => {
     expect(remoteAssertions).toContain("phase_6_inbox_assertions_passed");
     expect(remoteAssertions).toContain("duplicate provider ingestion");
