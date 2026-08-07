@@ -420,7 +420,9 @@ configurées dans Vercel pour Production et Preview :
 
 - `NEXT_PUBLIC_APP_URL=https://surfce-gpt.vercel.app` ;
 - `NEXT_PUBLIC_SUPABASE_URL` et `NEXT_PUBLIC_SUPABASE_ANON_KEY` ;
-- `SUPABASE_SERVICE_ROLE_KEY`.
+- `SUPABASE_SERVICE_ROLE_KEY` ;
+- `AI_PROVIDER`, `OPENAI_API_KEY` et `AI_DEFAULT_MODEL` ;
+- `MAP_TILES_API_KEY`.
 
 Les secrets runtime suivants restent manquants :
 
@@ -443,7 +445,8 @@ Variables optionnelles ou réservées aux autres providers :
 
 - `MAIL_WEBHOOK_SECRET` pour le webhook générique/mock ;
 - `SUPABASE_DATABASE_URL` pour automatiser les migrations, non requise au runtime ;
-- `OPENAI_API_KEY` et `AI_DEFAULT_MODEL` ;
+- `NEXT_PUBLIC_MAP_STYLE_URL` ;
+- `GOOGLE_MAPS_API_KEY` et `OVERTURE_DATA_URL` pour les providers Places réels ;
 - `SIRENE_API_KEY` et `SIRENE_API_BASE_URL` ;
 - `HUNTER_API_KEY` ;
 - `DROPCONTACT_API_KEY`.
@@ -476,9 +479,9 @@ des Phases 6 à 9 reste utilisable sans appel externe ni coût.
 6. `npm audit` signale trois vulnérabilités connues dans l’arbre de dépendances, dont une modérée et
    deux élevées. Aucun `npm audit fix --force` n’a été appliqué afin d’éviter une mise à niveau
    cassante non revue.
-7. Les valeurs commerciales des lieux, offres, entreprises, personas et recommandations sont des
-   données de démonstration à valider, jamais des promesses définitives. Toutes les sociétés
-   Explorer et tous les contacts Phase 5 sont fictifs.
+7. Les quatre fiches de lieux ne conservent que leur identité minimale. Leurs capacités, offres,
+   coordonnées et conditions commerciales doivent être renseignées et validées avant toute
+   campagne réelle.
 8. Le rate limiting HTTP est local à chaque instance Vercel. Les quotas providers PostgreSQL sont
    distribués, mais une protection globale supplémentaire pourra être ajoutée si le trafic public
    l’exige.
