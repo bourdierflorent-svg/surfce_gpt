@@ -418,7 +418,7 @@ racine. Aucun code métier antérieur n’a donc été supprimé ou remplacé.
 | Assertions RLS Phase 9           | Réussi — quotas, jobs, rôles, isolation et privilèges, rollback final           |
 | Schéma distant Phase 9           | Réussi — 2 tables RLS, 2 migrations, 9 quotas et 0 warning performance          |
 | GitHub Actions                   | Réussi — workflow `Quality` du commit Phase 9 entièrement vert                  |
-| Production Vercel                | Déployée — liveness 200 sur le commit `583f75997fb0`, en-têtes sécurité actifs  |
+| Production Vercel                | Déployée — commit `5041320`, santé 200 et tuiles MapTiler Streets chargées      |
 | Migration Supabase `tzv…`        | Réussi — migrations, seed de validation, SQL lint, admin et lecture RLS validés |
 | Parcours authentifié production  | Réussi — propriétaire, pages clés et blocage d’opposition vérifiés              |
 | Nettoyage des fixtures           | Réussi — données fictives retirées après validation, socle SURFCE conservé      |
